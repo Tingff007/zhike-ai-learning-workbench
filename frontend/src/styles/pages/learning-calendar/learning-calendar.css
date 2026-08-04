@@ -1,0 +1,812 @@
+/* 学习日历页：65% 日历主栏 + 35% 任务侧栏，严格双栏不分堆叠 */
+.ai-overlay-panel:has(.learning-calendar-page) {
+  overflow: hidden;
+}
+
+.ai-overlay-panel:has(.learning-calendar-page) .ai-overlay-content {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.learning-calendar-page {
+  --lc-gap-page: 20px;
+  --lc-gap-component: 16px;
+  --lc-text-primary: var(--settings-ink, #1d2129);
+  --lc-text-secondary: var(--settings-muted, #6e7681);
+  --lc-text-tertiary: #c9cdd4;
+  --lc-border: rgba(0, 0, 0, 0.06);
+  --lc-brand: #2563eb;
+  --lc-brand-hover: #1d4ed8;
+  --lc-col-left: 65%;
+  --lc-col-right: 35%;
+  --lc-status-active: #059669;
+  --lc-status-active-ring: rgba(5, 150, 105, 0.22);
+  --lc-status-todo: #7c3aed;
+  --lc-status-todo-ring: rgba(124, 58, 237, 0.2);
+  --lc-status-review: #d97706;
+  --lc-status-review-ring: rgba(217, 119, 6, 0.22);
+  --lc-status-done: #64748b;
+  --lc-status-done-ring: rgba(100, 116, 139, 0.18);
+  display: flex;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  margin-inline: 0;
+  overflow: hidden;
+  color: var(--lc-text-primary);
+  box-sizing: border-box;
+}
+
+.learning-calendar-page .overlay-page-hero {
+  flex-shrink: 0;
+}
+
+.learning-calendar-page .overlay-page-card,
+.learning-calendar-page__card {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+}
+
+.learning-calendar-page .page-header-toolbar {
+  margin-bottom: 0;
+}
+
+/* ---------- 页面布局：固定顶区 + 严格双栏主体 ---------- */
+.lc-layout {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lc-layout__fixed {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: var(--lc-gap-component);
+}
+
+.lc-layout__body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  gap: var(--lc-gap-component);
+  overflow: hidden;
+}
+
+/* ---------- 左栏 65%：仅日历挂件 + 下方留白 ---------- */
+.lc-main-left {
+  display: flex;
+  width: var(--lc-col-left);
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.lc-calendar-widget {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.lc-main-left::after {
+  display: block;
+  min-height: 120px;
+  flex: 1 1 auto;
+  content: '';
+}
+
+/* ---------- 右栏 35%：任务详情侧栏 ---------- */
+.lc-main-right {
+  display: flex;
+  width: var(--lc-col-right);
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--lc-gap-component);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* ---------- 工具栏 ---------- */
+.lc-toolbar-chip {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--lc-border);
+  border-radius: 10px;
+  background: transparent;
+  padding: 4px 10px;
+  color: var(--lc-text-secondary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 600;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-toolbar-chip svg {
+  flex-shrink: 0;
+  color: var(--lc-status-active);
+}
+
+.lc-month-nav {
+  display: inline-flex;
+  height: 36px;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--lc-border);
+  border-radius: 10px;
+  background: transparent;
+  padding: 0 4px;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-month-nav__btn {
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--lc-text-secondary);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.lc-month-nav__btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--lc-text-primary);
+}
+
+.lc-month-nav__label {
+  min-width: 96px;
+  padding: 0 8px;
+  color: var(--lc-text-primary);
+  font-size: clamp(13px, 0.85vw, 14px);
+  font-weight: 650;
+  text-align: center;
+}
+
+.lc-month-nav__today {
+  height: 28px;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--lc-text-secondary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease;
+}
+
+.lc-month-nav__today:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--lc-text-primary);
+}
+
+/* ---------- 统计卡片 ---------- */
+.lc-metrics {
+  display: grid;
+  gap: var(--lc-gap-component);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.lc-metric {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--lc-gap-component);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--page-inner-radius);
+  background: transparent;
+  padding: var(--page-card-pad);
+  box-shadow: var(--page-inner-shadow);
+  box-sizing: border-box;
+}
+
+.lc-metric__icon {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--lc-border);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--lc-text-secondary);
+}
+
+.lc-metric:nth-child(1) .lc-metric__icon {
+  color: var(--lc-status-active);
+  background: rgba(5, 150, 105, 0.08);
+}
+
+.lc-metric:nth-child(2) .lc-metric__icon {
+  color: var(--lc-status-review);
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.lc-metric:nth-child(3) .lc-metric__icon {
+  color: var(--lc-status-todo);
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.lc-metric:nth-child(4) .lc-metric__icon {
+  color: var(--lc-text-secondary);
+  background: rgba(100, 116, 139, 0.08);
+}
+
+.lc-metric__body {
+  min-width: 0;
+}
+
+.lc-metric__label {
+  display: block;
+  overflow: hidden;
+  color: var(--lc-text-secondary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-metric__value {
+  display: block;
+  margin-top: 4px;
+  color: var(--lc-text-primary);
+  font-size: clamp(22px, 1.6vw, 28px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.lc-metric__helper {
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: var(--lc-text-tertiary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1599px) {
+  .lc-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1199px) {
+  .lc-metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 日历挂件：日期格保持正常宽高比 ---------- */
+.lc-calendar {
+  overflow: hidden;
+  border: 1px solid var(--lc-border);
+  border-radius: var(--page-inner-radius);
+  background: transparent;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: auto;
+}
+
+.lc-calendar__weekday {
+  display: flex;
+  aspect-ratio: 1.6;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--lc-border);
+  border-bottom: 1px solid var(--lc-border);
+  color: var(--lc-text-tertiary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 600;
+}
+
+.lc-calendar__weekday:nth-child(7n) {
+  border-right: 0;
+}
+
+.lc-calendar__cell {
+  display: block;
+  aspect-ratio: 1;
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  border-right: 1px solid var(--lc-border);
+  border-bottom: 1px solid var(--lc-border);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.lc-calendar__cell:nth-child(7n) {
+  border-right: 0;
+}
+
+.lc-calendar__cell:nth-last-child(-n + 7) {
+  border-bottom: 0;
+}
+
+.lc-calendar__cell-inner {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 8px 4px;
+  box-sizing: border-box;
+  transition: background 0.16s ease;
+}
+
+.lc-calendar__cell:hover .lc-calendar__cell-inner {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.lc-calendar__cell--muted .lc-calendar__day {
+  color: var(--lc-text-tertiary);
+}
+
+.lc-calendar__day {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--lc-text-primary);
+  font-size: clamp(12px, 0.85vw, 14px);
+  font-weight: 600;
+  line-height: 1;
+  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.lc-calendar__cell--active .lc-calendar__day {
+  background: var(--lc-brand);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+}
+
+.lc-calendar__cell--today:not(.lc-calendar__cell--active) .lc-calendar__day {
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--lc-brand);
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.18);
+}
+
+.lc-calendar__dots {
+  display: flex;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+/* ---------- 语义状态色：圆点 ---------- */
+.lc-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.lc-dot--active {
+  background: var(--lc-status-active);
+  box-shadow: 0 0 0 2px var(--lc-status-active-ring);
+}
+
+.lc-dot--todo {
+  background: var(--lc-status-todo);
+  box-shadow: 0 0 0 2px var(--lc-status-todo-ring);
+}
+
+.lc-dot--review {
+  background: var(--lc-status-review);
+  box-shadow: 0 0 0 2px var(--lc-status-review-ring);
+}
+
+.lc-dot--done {
+  background: var(--lc-status-done);
+  box-shadow: 0 0 0 2px var(--lc-status-done-ring);
+}
+
+/* ---------- 侧栏卡片 ---------- */
+.lc-side-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--lc-border);
+  border-radius: var(--page-inner-radius);
+  background: transparent;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-side-card__head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--lc-border);
+  padding: var(--page-card-pad);
+}
+
+.lc-side-card__title {
+  overflow: hidden;
+  color: var(--lc-text-primary);
+  font-size: clamp(13px, 0.85vw, 14px);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lc-side-card__badge {
+  flex-shrink: 0;
+  border: 1px solid var(--lc-border);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.03);
+  padding: 2px 10px;
+  color: var(--lc-text-secondary);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 600;
+}
+
+.lc-side-card__link {
+  flex-shrink: 0;
+  color: var(--lc-brand);
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+
+.lc-side-card__link:hover {
+  color: var(--lc-brand-hover);
+}
+
+.lc-task-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lc-task-empty {
+  margin: 0;
+  padding: 28px var(--page-card-pad);
+  color: var(--lc-text-tertiary);
+  font-size: clamp(12px, 0.85vw, 13px);
+  line-height: 1.55;
+  text-align: center;
+}
+
+/* ---------- 组件 A：今日待办（无进度） ---------- */
+.lc-todo-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--lc-border);
+  padding: 14px var(--page-card-pad);
+  transition: background 0.16s ease;
+}
+
+.lc-todo-row:last-child {
+  border-bottom: 0;
+}
+
+.lc-todo-row:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.lc-todo-row--done {
+  opacity: 0.72;
+}
+
+.lc-todo-check {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 2px solid var(--lc-text-tertiary);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.lc-todo-check--done {
+  border-color: var(--lc-status-active);
+  background: var(--lc-status-active);
+}
+
+.lc-todo-check svg {
+  width: 11px;
+  height: 11px;
+}
+
+.lc-todo-row__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--lc-text-primary);
+  font-size: clamp(12px, 0.85vw, 13px);
+  font-weight: 650;
+  line-height: 1.45;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.16s ease;
+}
+
+.lc-todo-row__title:hover {
+  color: var(--lc-brand);
+}
+
+.lc-todo-row__actions {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ---------- 组件 B：近期 7 项任务（进度追踪） ---------- */
+.lc-upcoming-row {
+  position: relative;
+  border-bottom: 1px solid var(--lc-border);
+}
+
+.lc-upcoming-row:last-child {
+  border-bottom: 0;
+}
+
+.lc-upcoming-row--done {
+  opacity: 0.72;
+}
+
+.lc-upcoming-row__inner {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px var(--page-card-pad);
+  transition: background 0.16s ease;
+}
+
+.lc-upcoming-row__inner:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.lc-upcoming-row__headline {
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.lc-upcoming-row__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--lc-text-primary);
+  font-size: clamp(12px, 0.85vw, 13px);
+  font-weight: 650;
+  line-height: 1.45;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.16s ease;
+}
+
+.lc-upcoming-row__title:hover {
+  color: var(--lc-brand);
+}
+
+.lc-upcoming-row__badges {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.lc-upcoming-row__progress-badge {
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.08);
+  padding: 2px 8px;
+  color: var(--lc-brand);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.lc-upcoming-row__progress-badge--done {
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--lc-status-active);
+}
+
+.lc-upcoming-row__progress-badge--high {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.lc-upcoming-row__status-badge {
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.lc-upcoming-row__status-badge--in_progress {
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+}
+
+.lc-upcoming-row__status-badge--completed {
+  background: rgba(5, 150, 105, 0.1);
+  color: var(--lc-status-active);
+}
+
+.lc-upcoming-row__status-badge--high_priority {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.lc-upcoming-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--lc-text-tertiary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lc-upcoming-row__progress-line {
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.lc-upcoming-row__progress-line span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lc-brand);
+  transition: width 0.2s ease;
+}
+
+.lc-upcoming-row--done .lc-upcoming-row__progress-line span {
+  background: var(--lc-status-active);
+}
+
+.lc-upcoming-row--high .lc-upcoming-row__progress-line span {
+  background: #f87171;
+}
+
+.lc-side-actions {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lc-gap-component);
+  padding-bottom: 4px;
+}
+
+/* ---------- 按钮 ---------- */
+.lc-btn {
+  display: inline-flex;
+  min-width: 0;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 650;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.lc-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.lc-btn--secondary {
+  border: 1px solid var(--lc-border);
+  background: transparent;
+  color: var(--lc-text-secondary);
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-btn--secondary:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--lc-text-primary);
+}
+
+.lc-btn--primary {
+  border: 1px solid var(--lc-brand);
+  background: var(--lc-brand);
+  color: #fff;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.lc-btn--primary:hover:not(:disabled) {
+  border-color: var(--lc-brand-hover);
+  background: var(--lc-brand-hover);
+}
+
+.lc-btn--ghost {
+  height: auto;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  padding: 4px 0;
+  color: var(--lc-brand);
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.lc-btn--ghost:hover:not(:disabled) {
+  color: var(--lc-brand-hover);
+  background: transparent;
+}
+
+.lc-btn--ghost svg {
+  display: none;
+}
+
+/* ---------- 课程切换器 ---------- */
+.learning-calendar-course-switcher .course-switcher {
+  width: 100%;
+}
+
+.learning-calendar-course-switcher .course-switcher__trigger {
+  min-height: 36px;
+  border: 1px solid var(--lc-border);
+  border-radius: 10px;
+  background: transparent;
+  padding: 4px 10px;
+  box-shadow: var(--page-inner-shadow);
+}
+
+.learning-calendar-course-switcher .course-switcher__label {
+  font-size: clamp(11px, 0.75vw, 12px);
+  font-weight: 650;
+}
+
+.learning-calendar-course-switcher .course-switcher__meta {
+  display: none;
+}

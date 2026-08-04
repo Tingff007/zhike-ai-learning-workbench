@@ -1,0 +1,312 @@
+.overlay-page-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: min(100%, 100%);
+  /* 破窗壳层本身不限宽，通栏 hero 背景可铺满滚动容器；限宽由 hero header 与 card 承担 */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 学情画像 / 公告 / 日历 / 学习路径：overlay 卡片内工具条不再重复左右内边距 */
+.overlay-page-card > .content-meta-bar,
+.overlay-page-card > .learning-path-header--toolbar,
+.overlay-page-card > .page-header-toolbar:first-child {
+  padding-inline: 0;
+}
+
+.learning-path-page--workbench .overlay-page-card.learning-path-page__card--workbench {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/**
+ * 非破窗 overlay / standalone 页面统一内容容器。
+ * 破窗页请继续使用 OverlayPageShell（hero 满宽 + card/header 限宽居中）。
+ */
+.page-route-shell {
+  width: 100%;
+  max-width: var(--page-content-max-width);
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
+.overlay-page-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: var(--page-overlay-hero-min-height);
+  /* Global Header 已承载页面标题，hero 仅保留装饰背景，顶边距缩小。 */
+  margin-top: 0;
+  padding-bottom: var(--page-overlay-card-overlap);
+}
+
+.overlay-page-hero__backdrop {
+  position: absolute;
+  inset: 0;
+  background-image: var(--overlay-page-hero-bg);
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-size: cover;
+  border-radius: 12px 12px 0 0;
+  pointer-events: none;
+}
+
+.overlay-page-hero__header.page-header {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--page-content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-overlay-pad-x);
+  box-sizing: border-box;
+}
+
+.overlay-page-card {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: none;
+  margin-top: calc(-1 * var(--page-overlay-card-overlap));
+  margin-left: 0;
+  margin-right: 0;
+  padding:
+    var(--page-overlay-card-pad-top)
+    var(--page-overlay-pad-x)
+    var(--page-overlay-pad-bottom);
+  box-sizing: border-box;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* overlay 内层卡片：透明底 + 柔边框 + 轻阴影，避免与主画布玻璃底双层叠加 */
+.overlay-inner-card {
+  border: 1px solid var(--page-inner-border);
+  border-radius: var(--page-inner-radius);
+  background: var(--page-inner-surface);
+  box-shadow: var(--page-inner-shadow);
+  box-sizing: border-box;
+}
+
+.overlay-inner-card--metric {
+  padding: var(--page-card-pad);
+}
+
+.overlay-inner-card--board {
+  overflow: hidden;
+  border-radius: var(--page-inner-radius);
+}
+
+.overlay-inner-card--toolbar {
+  border-radius: 10px;
+}
+
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .lp-panel--dark,
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .lp-panel--light,
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .announcement-detail-panel,
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .announcement-feature-card,
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .learning-path-page__column {
+  background: var(--page-inner-surface);
+  border-color: var(--page-inner-border);
+  box-shadow: var(--page-inner-shadow);
+}
+
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .learning-path-page__column-head {
+  background: var(--page-inner-surface-muted);
+}
+
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .announcement-list-item {
+  background: var(--page-inner-surface);
+}
+
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .announcement-list-item.is-active {
+  background: var(--sidebar-item-active-bg);
+}
+
+.overlay-page-shell:is(
+  .learning-profile-page,
+  .announcements-page,
+  .learning-calendar-page,
+  .learning-path-page
+) .lp-panel--dark::after {
+  opacity: 0.45;
+}
+
+.floating-main-canvas .overlay-page-hero__header.page-header {
+  max-width: none;
+  margin-inline: 0;
+}
+
+.floating-main-canvas .overlay-page-card {
+  max-width: none;
+  margin-inline: 0;
+}
+
+.overlay-page-card > .page-header-toolbar:first-child {
+  margin-top: 0;
+}
+
+.page-header {
+  margin: 0 0 var(--page-header-margin-bottom);
+  padding: var(--page-header-pad-y) 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.page-header__title {
+  margin: 0;
+  color: var(--page-header-ink);
+  font-size: var(--page-header-title-size);
+  font-weight: var(--page-header-title-weight);
+  line-height: var(--page-header-title-line-height);
+  letter-spacing: 0;
+}
+
+.page-header__subtitle {
+  max-width: 760px;
+  margin: var(--page-header-gap) 0 0;
+  color: var(--page-header-muted);
+  font-size: var(--page-header-subtitle-size);
+  line-height: var(--page-header-subtitle-line-height);
+}
+
+.page-header-toolbar {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: calc(var(--page-header-margin-bottom) * -0.35) 0 var(--page-header-margin-bottom);
+}
+
+/* 变体 2：左对齐 Tab 选项卡栏。
+   覆盖默认 space-between，让 Tab 容器占满整行、左对齐、支持横向滚动，
+   避免 Tab 与右侧操作按钮挤在同一行导致 Tab 视觉居中。 */
+.page-header-toolbar--tabs {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 16px;
+  overflow-x: auto;
+}
+
+.page-header-toolbar--tabs > * {
+  flex: 0 0 auto;
+}
+
+/* 两层 Toolbar 上下排列时，次行 Toolbar 顶部间距统一为 12px，
+   避免变体 1 + 变体 2 组合出现间距不一致。 */
+.page-header-toolbar + .page-header-toolbar {
+  margin-top: 12px;
+}
+
+/* 非 dashboard：主画布已承载统一毛玻璃，业务卡片去重半透底与 blur，仅保留边框与弱阴影 */
+.ai-workspace-shell:not(.route-dashboard) .floating-main-canvas :is(
+  .lp-panel--dark,
+  .lp-panel--light,
+  .lp-panel--summary,
+  .announcement-detail-panel,
+  .announcement-feature-card,
+  .announcement-list-item,
+  .learning-path-page__column,
+  .learning-path-page__column-head,
+  .assessment-panel,
+  .assessment-remedies,
+  .assessment-metric,
+  .overlay-inner-card,
+  .lc-metric,
+  .lc-calendar,
+  .lc-side-card,
+  .lc-event-row,
+  .admin-panel,
+  .admin-panel__header,
+  .admin-workbench .surface-panel,
+  .admin-workbench .card,
+  .personal-settings-profile,
+  .personal-settings-sheet,
+  .personal-settings-sidebar,
+  .personal-settings-section
+) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--page-inner-border);
+  box-shadow: var(--page-inner-shadow);
+}
+
+.ai-workspace-shell:not(.route-dashboard) .floating-main-canvas .lp-panel--dark::after,
+.ai-workspace-shell:not(.route-dashboard) .floating-main-canvas .lp-panel--summary::after {
+  opacity: 0.35;
+}
+
+/* dashboard：对话卡片保留独立毛玻璃，保证壁纸背景下文字可读 */
+.route-dashboard .floating-main-canvas :is(
+  .chat-bubble--assistant,
+  .chat-bubble--progress,
+  .learning-context-strip,
+  .ai-console-input,
+  .ai-resource-stream-hint
+) {
+  background: var(--sidebar-surface-bg);
+  backdrop-filter: var(--sidebar-surface-blur);
+  -webkit-backdrop-filter: var(--sidebar-surface-blur);
+}
+
+/* 非 dashboard 分屏/overlay 内对话气泡不再叠第二层玻璃 */
+.ai-workspace-shell:not(.route-dashboard) .floating-main-canvas :is(
+  .chat-bubble--assistant,
+  .chat-bubble--progress,
+  .learning-context-strip,
+  .ai-console-input
+) {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}

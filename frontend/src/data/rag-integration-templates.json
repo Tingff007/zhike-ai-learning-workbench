@@ -1,0 +1,138 @@
+{
+  "items": [
+    {
+      "key": "iflytek-chatdoc",
+      "label": "讯飞星火 ChatDoc",
+      "rag_backend": "iflytek_chatdoc",
+      "available": true,
+      "credential_fields": [
+        {
+          "key": "app_id",
+          "label": "AppId",
+          "type": "text",
+          "required": true,
+          "placeholder": "控制台 AppId"
+        },
+        {
+          "key": "api_secret",
+          "label": "APISecret",
+          "type": "password",
+          "required": true,
+          "placeholder": "控制台 APISecret"
+        },
+        {
+          "key": "wiki_filter_score",
+          "label": "wikiFilterScore",
+          "type": "number",
+          "default": 0.82,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "env_prefix": "IFLYTEK_CHATDOC",
+      "env_fallback_hint": "未在管理端保存时，仍可使用 .env 中的 IFLYTEK_CHATDOC_* 环境变量。详见接入文档。",
+      "docs_url": "https://chatdoc.xfyun.cn/docs#/",
+      "meta_json": {
+        "icon_file": "xunfei.png",
+        "website_url": "https://www.xfyun.cn/doc/spark/ChatDoc-API.html",
+        "console_url": "https://console.xfyun.cn/services/bmx1",
+        "default_base_url": "https://chatdoc.xfyun.cn"
+      }
+    },
+    {
+      "key": "generic-cloud-rag",
+      "label": "通用云端 RAG",
+      "rag_backend": "generic_openai_kb",
+      "available": false,
+      "credential_fields": [
+        {
+          "key": "base_url",
+          "label": "API 请求地址",
+          "type": "text",
+          "required": true,
+          "placeholder": "https://your-kb-api.example.com/v1"
+        },
+        {
+          "key": "api_key",
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "placeholder": "Bearer Token 或 API Key"
+        },
+        {
+          "key": "app_id",
+          "label": "知识库 ID",
+          "type": "text",
+          "required": false,
+          "placeholder": "Dataset / Knowledge Base ID（按厂商文档选填）"
+        },
+        {
+          "key": "wiki_filter_score",
+          "label": "检索相似度阈值",
+          "type": "number",
+          "default": 0.82,
+          "min": 0,
+          "max": 1
+        }
+      ],
+      "env_prefix": "GENERIC_CLOUD_RAG",
+      "env_fallback_hint": "未在管理端保存时，仍可使用 .env 中的 GENERIC_CLOUD_RAG_* 环境变量。",
+      "docs_url": null,
+      "meta_json": {
+        "custom_form": true,
+        "icon_file": "generic.svg",
+        "website_url": "",
+        "locked_credential_keys": ["wiki_filter_score"],
+        "coming_soon_hint": "通用 Adapter 尚未接入，可先保存连接信息；文档入库与检索仍使用当前已启用的讯飞 ChatDoc。"
+      }
+    },
+    {
+      "key": "dashscope-bailian",
+      "label": "阿里云百炼 · 知识库",
+      "rag_backend": "dashscope_kb",
+      "available": false,
+      "credential_fields": [
+        {
+          "key": "api_key",
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "placeholder": "百炼控制台 API Key"
+        }
+      ],
+      "env_prefix": "DASHSCOPE_KB",
+      "env_fallback_hint": "未在管理端保存时，仍可使用 .env 中的 DASHSCOPE_KB_* 环境变量。",
+      "docs_url": "https://help.aliyun.com/zh/model-studio/developer-reference/add-documents-to-the-knowledge-base",
+      "meta_json": {
+        "icon_file": "aliyun.svg",
+        "website_url": "https://bailian.console.aliyun.com",
+        "default_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "coming_soon_hint": "后端 Adapter 尚未接入，可先保存凭证；正式入库与检索仍使用当前已启用的模板。"
+      }
+    },
+    {
+      "key": "zhipu-knowledge",
+      "label": "智谱 · 知识库",
+      "rag_backend": "zhipu_kb",
+      "available": false,
+      "credential_fields": [
+        {
+          "key": "api_key",
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "placeholder": "智谱开放平台 API Key"
+        }
+      ],
+      "env_prefix": "ZHIPU_KB",
+      "env_fallback_hint": "未在管理端保存时，仍可使用 .env 中的 ZHIPU_KB_* 环境变量。",
+      "docs_url": "https://open.bigmodel.cn/dev/api#knowledge",
+      "meta_json": {
+        "icon_file": "zhipu.svg",
+        "website_url": "https://open.bigmodel.cn",
+        "default_base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "coming_soon_hint": "后端 Adapter 尚未接入，可先保存凭证；正式入库与检索仍使用当前已启用的模板。"
+      }
+    }
+  ]
+}

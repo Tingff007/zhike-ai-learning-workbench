@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: zhike-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zhike_workshop}
+      POSTGRES_USER: ${POSTGRES_USER:-zhike}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zhike_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-zhike} -d ${POSTGRES_DB:-zhike_workshop}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:7.2
+    container_name: zhike-valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: zhike-backend
+    env_file: .env
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./backend:/app
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    command: sh -c "alembic upgrade head && python run_dev.py"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: zhike-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:8001/api/v1
+      VITE_WS_BASE_URL: ws://localhost:8001/ws
+    depends_on:
+      - backend
+    command: pnpm dev --host 0.0.0.0
+
+volumes:
+  postgres_data:
+  valkey_data:

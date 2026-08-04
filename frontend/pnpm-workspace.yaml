@@ -1,0 +1,4 @@
+allowBuilds:
+  esbuild: true
+# Corepack 按 package.json#packageManager 选择 pnpm 版本；此处关闭 pnpm 自带的版本切换/校验，避免与 Corepack 及全局 pnpm 冲突。
+pmOnFail: ignore

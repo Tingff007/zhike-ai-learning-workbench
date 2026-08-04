@@ -1,0 +1,12 @@
+backend/.pytest-tmp/
+backend/.pytest_cache/
+backend/.pytest-runtime-cache/
+backend/.pytest-runtime-tmp/
+backend/**/__pycache__/
+backend/**/*.pyc
+frontend/node_modules/
+frontend/dist/
+frontend/dist-verify/
+frontend/.playwright-cli/
+frontend/chrome-profile-*/
+*.log

@@ -1,0 +1,91 @@
+/* 右上角半嵌入关闭：圆弧凹陷边框 + 与按钮之间的环形空隙 */
+.ai-overlay-panel--closable,
+.ai-preview-stack--closable {
+  --panel-close-size: 28px;
+  --panel-notch-gap: 6px;
+  --panel-notch-btn-r: calc(var(--panel-close-size) / 2);
+  --panel-notch-arc-r: calc(var(--panel-notch-btn-r) + var(--panel-notch-gap));
+  --panel-notch-svg-size: calc(var(--panel-notch-arc-r) + 6px);
+  --panel-border: rgba(226, 232, 240, 0.92);
+  --panel-surface: rgba(255, 255, 255, 0.94);
+  --panel-close-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  border-top-right-radius: 0;
+}
+
+.ai-overlay-panel--closable {
+  --panel-border: rgba(255, 255, 255, 0.78);
+  --panel-surface: rgba(255, 255, 255, 0.78);
+  --panel-close-shadow: 0 8px 22px rgba(15, 23, 42, 0.1);
+}
+
+.ai-preview-stack--closable {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.ai-preview-stack--closable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 1px solid var(--panel-border);
+  border-top-right-radius: 0;
+  border-radius: 8px 0 8px 8px;
+  background: var(--panel-surface);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(22px);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--panel-notch-arc-r) + 1px),
+    #000 calc(var(--panel-notch-arc-r) + 2px)
+  );
+  mask-image: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--panel-notch-arc-r) + 1px),
+    #000 calc(var(--panel-notch-arc-r) + 2px)
+  );
+}
+
+.ai-preview-stack--closable > * {
+  position: relative;
+  z-index: 1;
+}
+
+.ai-overlay-panel--closable {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.ai-overlay-panel--closable::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: 1px solid var(--panel-border);
+  border-top-right-radius: 0;
+  border-radius: 8px 0 8px 8px;
+  background: var(--panel-surface);
+  box-shadow: 0 28px 90px rgba(15, 23, 42, 0.15);
+  backdrop-filter: blur(24px);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--panel-notch-arc-r) + 1px),
+    #000 calc(var(--panel-notch-arc-r) + 2px)
+  );
+  mask-image: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--panel-notch-arc-r) + 1px),
+    #000 calc(var(--panel-notch-arc-r) + 2px)
+  );
+}
+
+.ai-overlay-panel--closable > * {
+  position: relative;
+  z-index: 1;
+}

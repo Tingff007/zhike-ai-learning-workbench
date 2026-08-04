@@ -1,0 +1,56 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.pytest-runtime-tmp/
+.pytest-runtime-tmp*/
+.pytest-tmp/
+backend/.venv/
+backend/venv/
+backend/.pytest-deps/
+backend/.pytest-tmp/
+backend/.pytest-runtime-cache/
+backend/.pytest-runtime-tmp/
+backend/.pytest-runtime-tmp*/
+backend/.pytest-runtime-cache*/
+backend/pytest-cache-files-*/
+backend/backend/.pytest-runtime-cache*/
+backend/backend/.pytest-runtime-tmp*/
+backend/backend/pytest-cache-files-*/
+backend/test-storage-*/
+backend/.test-storage-*/
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-verify/
+frontend/.playwright-cli/
+frontend/chrome-profile-*/
+test-results/
+frontend/test-results/
+playwright-report/
+frontend/playwright-report/
+
+# Runtime output and storage
+*.log
+backend/*.log
+.playwright-cli/
+output/
+storage/
+backend/storage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

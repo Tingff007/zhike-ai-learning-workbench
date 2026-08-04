@@ -1,0 +1,186 @@
+{
+  "items": [
+    {
+      "key": "deepseek",
+      "label": "DeepSeek",
+      "payload": {
+        "provider": "deepseek",
+        "display_name": "DeepSeek",
+        "provider_type": "chat",
+        "protocol": "openai_compatible",
+        "base_url": "https://api.deepseek.com",
+        "chat_model": "deepseek-chat",
+        "priority": 1,
+        "is_active": true,
+        "is_default": true,
+        "supports_stream": true,
+        "supports_tool_call": true,
+        "supports_json_mode": true,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "deepseek", "billing_unit": "token" },
+        "meta_json": {
+          "template": "deepseek",
+          "credential_only": true,
+          "website_url": "https://platform.deepseek.com/api_keys"
+        }
+      }
+    },
+    {
+      "key": "iflytek-spark",
+      "label": "讯飞星火",
+      "payload": {
+        "provider": "iflytek_spark",
+        "display_name": "讯飞星火 Lite",
+        "provider_type": "chat",
+        "protocol": "openai_compatible",
+        "base_url": "https://spark-api-open.xf-yun.com/v1",
+        "chat_model": "lite",
+        "priority": 2,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": true,
+        "supports_tool_call": false,
+        "supports_json_mode": true,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "iflytek", "billing_unit": "token" },
+        "meta_json": {
+          "template": "iflytek-spark",
+          "credential_only": true,
+          "website_url": "https://www.xfyun.cn/doc/spark/HTTP%E8%B0%83%E7%94%A8%E6%96%87%E6%A1%A3.html",
+          "console_url": "https://console.xfyun.cn/services/cbm",
+          "remarks": "HTTP OpenAI 兼容接口；API Key 请填写对应模型版本页面的 APIPassword。"
+        }
+      }
+    },
+    {
+      "key": "dashscope-qwen",
+      "label": "阿里百炼 / 通义",
+      "payload": {
+        "provider": "dashscope",
+        "display_name": "阿里云百炼",
+        "provider_type": "chat",
+        "protocol": "openai_compatible",
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "chat_model": "qwen-plus",
+        "priority": 3,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": true,
+        "supports_tool_call": true,
+        "supports_json_mode": true,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "aliyun", "billing_unit": "token" },
+        "meta_json": {
+          "template": "dashscope-qwen",
+          "credential_only": true,
+          "icon_file": "aliyun.svg",
+          "website_url": "https://bailian.console.aliyun.com"
+        }
+      }
+    },
+    {
+      "key": "zhipu-glm",
+      "label": "智谱 GLM",
+      "payload": {
+        "provider": "zhipu_glm",
+        "display_name": "智谱 GLM",
+        "provider_type": "chat",
+        "protocol": "openai_compatible",
+        "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "chat_model": "glm-4-flash",
+        "priority": 4,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": true,
+        "supports_tool_call": true,
+        "supports_json_mode": true,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "zhipu", "billing_unit": "token" },
+        "meta_json": {
+          "template": "zhipu-glm",
+          "credential_only": true,
+          "icon_file": "zhipu.svg",
+          "website_url": "https://open.bigmodel.cn"
+        }
+      }
+    },
+    {
+      "key": "kimi",
+      "label": "Kimi / Moonshot",
+      "payload": {
+        "provider": "kimi",
+        "display_name": "Kimi",
+        "provider_type": "chat",
+        "protocol": "openai_compatible",
+        "base_url": "https://api.moonshot.cn/v1",
+        "chat_model": "moonshot-v1-8k",
+        "priority": 5,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": true,
+        "supports_tool_call": false,
+        "supports_json_mode": true,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "moonshot", "billing_unit": "token" },
+        "meta_json": {
+          "template": "kimi",
+          "credential_only": true,
+          "website_url": "https://platform.moonshot.cn/console/api-keys"
+        }
+      }
+    },
+    {
+      "key": "openai-images",
+      "label": "OpenAI Images",
+      "payload": {
+        "provider": "openai_image",
+        "display_name": "OpenAI Images",
+        "provider_type": "image_generation",
+        "protocol": "openai_images",
+        "base_url": "https://api.openai.com/v1",
+        "chat_model": "gpt-image-1",
+        "priority": 20,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": false,
+        "supports_tool_call": false,
+        "supports_json_mode": false,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "openai", "billing_unit": "image" },
+        "meta_json": {
+          "template": "openai-images",
+          "credential_only": true,
+          "image_model": "gpt-image-1",
+          "response_format": "b64_json",
+          "website_url": "https://platform.openai.com/docs/api-reference/images"
+        }
+      }
+    },
+    {
+      "key": "fal-queue",
+      "label": "fal.ai Queue",
+      "payload": {
+        "provider": "fal_ai",
+        "display_name": "fal.ai Queue",
+        "provider_type": "image_generation",
+        "protocol": "fal_queue",
+        "base_url": "https://queue.fal.run",
+        "chat_model": "fal-ai/imagen4/preview",
+        "priority": 21,
+        "is_active": true,
+        "is_default": false,
+        "supports_stream": false,
+        "supports_tool_call": false,
+        "supports_json_mode": false,
+        "health_status": "standby",
+        "cost_config_json": { "vendor": "fal", "billing_unit": "image" },
+        "meta_json": {
+          "template": "fal-queue",
+          "credential_only": true,
+          "image_model": "fal-ai/imagen4/preview",
+          "website_url": "https://fal.ai"
+        }
+      }
+    }
+  ]
+}

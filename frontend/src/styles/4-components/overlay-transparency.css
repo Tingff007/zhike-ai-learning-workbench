@@ -1,0 +1,54 @@
+/* 用户模式 overlay 页面：页面根容器透明，半透毛玻璃由 .floating-main-canvas 统一提供。 */
+.ai-overlay-content:has(> .announcements-page),
+.ai-overlay-content:has(> .learning-path-page),
+.ai-overlay-content:has(> .learning-calendar-page),
+.ai-overlay-content:has(> .overlay-page-shell),
+.ai-overlay-content:has(> .assessment-canvas),
+.ai-overlay-content:has(> .resource-hall-page),
+.ai-overlay-content:has(> .learning-profile-page),
+.ai-overlay-content:has(> .personal-settings-page) {
+  background: transparent;
+}
+
+/* 学情画像 / 个人设置：去除二次白底，沿用公告中心的半透明 + 模糊背景。
+   padding 不再覆盖，统一引用 overlay 令牌，确保 Page Header 顶部偏移与左对齐起点一致。 */
+
+.announcements-page,
+.learning-path-page,
+.learning-calendar-page,
+.assessment-canvas,
+.resource-hall-page,
+.learning-profile-page,
+.personal-settings-page,
+.admin-workbench {
+  background: transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 破窗页 shell 不限宽（hero 背景满宽）；限宽由 .overlay-page-hero__header / .overlay-page-card 承担 */
+.overlay-page-shell:is(
+  .announcements-page,
+  .learning-path-page,
+  .learning-calendar-page,
+  .resource-hall-page,
+  .learning-profile-page
+) {
+  max-width: none;
+  margin-inline: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* 非破窗 overlay 页面根容器限宽居中 */
+.assessment-canvas,
+.personal-settings-page,
+.admin-workbench {
+  max-width: var(--page-content-max-width);
+  margin-inline: auto;
+}
+
+.learning-profile-page {
+  min-height: min(820px, calc(100vh - var(--workspace-viewport-chrome)));
+}
+

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Zhike Workshop logo">
+  <defs>
+    <linearGradient id="logoA" x1="7" x2="42" y1="39" y2="10" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="logoB" x1="12" x2="37" y1="12" y2="39" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10b981"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#logoA)" d="M24 4 43 14.8v18.4L24 44 5 33.2V14.8L24 4Z"/>
+  <path fill="#fff" d="m24 12.2 11.8 6.7v5.7L24 31.3l-11.8-6.7v-5.7L24 12.2Z"/>
+  <path fill="url(#logoB)" d="M12.2 27.2 24 33.9l11.8-6.7v5.4L24 39.4l-11.8-6.8v-5.4Z"/>
+  <path fill="#2563eb" d="m24 16.9 7.8 4.4L24 25.8l-7.8-4.5 7.8-4.4Z"/>
+</svg>

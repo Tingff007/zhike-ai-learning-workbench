@@ -1,0 +1,7 @@
+/**
+ * 样式目录说明（请勿在此文件使用 @import 串联全局样式）。
+ *
+ * 实际加载入口：./global-styles.ts（由 main.tsx import）
+ * Tailwind 层：./tailwind.css（@tailwind + @layer base/components）
+ * 设计令牌：./1-settings/variables.css
+ */

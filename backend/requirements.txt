@@ -1,0 +1,25 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic>=2.10.4,<3
+pydantic-settings>=2.7.1
+openai>=1.0.0
+cohere>=5.0.0
+numpy>=1.26.0
+SQLAlchemy>=2.0.36
+psycopg[binary]>=3.2.3
+alembic==1.14.0
+python-multipart==0.0.20
+httpx==0.28.1
+websockets==14.1
+orjson>=3.10.12
+redis==5.2.1
+langchain==0.3.13
+langgraph==0.2.60
+PyYAML>=6.0.2
+semantic-router>=0.1.15; python_version >= "3.12" and python_version < "3.13"
+pytest==8.3.4
+ruff==0.15.16
+PyMuPDF==1.25.1
+tiktoken>=0.8.0
+cryptography==43.0.3
+argon2-cffi>=23.1.0,<26

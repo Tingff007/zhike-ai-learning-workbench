@@ -1,0 +1,9 @@
+/* 资源大厅右栏信息密度高，隐藏全局挂件避免遮挡卡片内容。 */
+body:has(.resource-hall-page) .codex-pet {
+  display: none;
+}
+
+/* 资源审核页是高密度工作台，隐藏浮动宠物避免遮挡统计与操作区。 */
+body:has(.resource-review-page) .codex-pet {
+  display: none;
+}
