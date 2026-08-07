@@ -6,6 +6,11 @@ import { isResourceCreatedMessage } from '../../utils/resource-preview';
 import { stripUserMessageBody } from '../../utils/user-message-content';
 import { isResourceTaskMessage } from '../../utils/resource-task-messages';
 import { detectMessageVariant, formatMessageTime, hasMessageCitations, parseErrorSteps } from './chatMessageRowUtils';
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import { Mermaid } from './Mermaid';
 export { detectMessageVariant, groupMessages, type ChatMessageGroup, type ChatMessageVariant } from './chatMessageRowUtils';
 
 type ChatMessageRowProps = {
@@ -108,7 +113,29 @@ export function ChatMessageRow({
                 {isCourseRagAnswer ? (
                   <p className="chat-bubble__source-banner">基于课程资料回答</p>
                 ) : null}
-                <p>{bodyContent}</p>
+                <div className="prose max-w-full leading-7 text-[#374151]">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      code({ node, className, children, ...props }: any) {
+                        const value = String(children).replace(/\n$/, '');
+                        const match = /language-(\w+)/.exec(className || '');
+                        const lang = match?.[1] ?? '';
+                        if (lang === 'mermaid') {
+                          return <Mermaid source={value} />;
+                        }
+                        return (
+                          <code className={String(className)} {...props}>
+                            {value}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {bodyContent}
+                  </ReactMarkdown>
+                </div>
               </>
             )}
             {hasMessageCitations(message) ? (

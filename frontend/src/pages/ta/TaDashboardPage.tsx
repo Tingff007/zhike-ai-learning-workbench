@@ -8,8 +8,8 @@ export function TaDashboardPage() {
   useEffect(() => {
     setLoading(true);
     apiClient.get("/api/v1/ta/dashboard")
-      .then((res) => setStats(res.data))
-      .catch((err) => setError(err.message || "加载失败"))
+      .then((res: any) => setStats(res.data))
+      .catch((err) => setError(err?.message || "加载失败"))
       .finally(() => setLoading(false));
   }, [setStats, setLoading, setError]);
 
