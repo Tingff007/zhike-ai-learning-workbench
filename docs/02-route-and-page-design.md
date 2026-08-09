@@ -41,6 +41,7 @@
 | `/ai-room` | AI 学习室独立入口 | 与 `/dashboard` 的 AI 对话舱保持一致能力，用于深链、兼容或全屏对话场景。 |
 | `/resource-workshop` | 资源工坊深链入口 | 解析资源任务、artifact、concept、type 等 URL 参数，打开 `/dashboard` 的 split 资源画布。 |
 | `/assessment` | 练习评估 | 承接阶段测评、答题记录、自动评分、错题归因、掌握度更新和补救建议。 |
+| `/assessment/report` | 评估报告 | 展示本次测评的评分结论、Rubric 明细、薄弱归因、画像更新提示与后续学习建议。 |
 | `/personal-settings` | 个人设置 | 账号资料、课程分配、学习偏好、个人模型覆盖和隐私数据管理。 |
 
 ### 2.4 管理端主导航路由
