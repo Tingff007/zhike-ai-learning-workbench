@@ -610,6 +610,20 @@ export function AssessmentPage(): JSX.Element {
                   <Bot size={17} />
                   查看画像变化
                 </Link>
+                <Link
+                  to="/assessment/report"
+                  state={{
+                    result: submitAssessment.data,
+                    conceptTitle,
+                    courseTitle: currentCourseTitle || currentCourseId || '当前课程',
+                    durationSeconds,
+                    submittedAt: new Date().toISOString(),
+                  }}
+                  className="assessment-ai-action assessment-ai-action--secondary"
+                >
+                  <FileText size={17} />
+                  查看完整报告
+                </Link>
               </div>
             </div>
           )}

@@ -19,7 +19,8 @@ import { api } from '../../api/endpoints';
 import { useLearningProfile } from '../../hooks/useLearningProfile';
 import { CalibrateModal } from './CalibrateModal';
 import { ProfileOverviewPanel } from './ProfileOverviewPanel';
-import { buildComparisonScores, ProfileInsightPanel, useHighlightPulse } from './ProfileInsightPanel';
+import { buildComparisonScores, useHighlightPulse } from './ProfileInsightPanel';
+import { ProfileDetailPage } from './ProfileDetailPage';
 import { ProfileRadarChart } from './ProfileRadarChart';
 import { formatProfilePercent } from './profileTokens';
 import type {
@@ -401,7 +402,6 @@ function ScopeEmptyGuide({
 export function LearningProfilePage(): ReactElement {
   const queryClient = useQueryClient();
   const { activeScope, setActiveScope, profileQuery, hasCourse, activeCourseId } = useLearningProfile();
-  const [expandedEvidenceKey, setExpandedEvidenceKey] = useState<string | null>(null);
   const [selectedDimensionKey, setSelectedDimensionKey] = useState<string | null>(null);
   const [correctionPanelOpen, setCorrectionPanelOpen] = useState(false);
   const [isCalibrateModalOpen, setIsCalibrateModalOpen] = useState(false);
@@ -443,7 +443,6 @@ export function LearningProfilePage(): ReactElement {
 
   useEffect(() => {
     setSelectedDimensionKey(null);
-    setExpandedEvidenceKey(null);
   }, [activeScope]);
 
   function openCorrectionPanel(dimension?: ProfileDimension, action: CorrectionAction = 'mark_inaccurate'): void {
@@ -710,15 +709,11 @@ export function LearningProfilePage(): ReactElement {
               </div>
 
               <div className="col-span-12 lg:col-span-3">
-                <ProfileInsightPanel
+                <ProfileDetailPage
                   dimension={selectedDimension}
-                  scopeKey={activeScope}
-                  expandedKey={expandedEvidenceKey}
-                  correctionPending={correctionMutation.isPending}
-                  onToggleEvidence={(dimension) => setExpandedEvidenceKey((current) => (
-                    current === `${activeScope}-${dimension.key}` ? null : `${activeScope}-${dimension.key}`
-                  ))}
-                  onOpenCorrection={(dimension) => openCorrectionPanel(dimension)}
+                  scope={activeScope}
+                  onCalibrate={(dimension) => handleCalibrateDimension(dimension.key)}
+                  onFeedback={(dimension) => openCorrectionPanel(dimension)}
                 />
               </div>
             </motion.div>
