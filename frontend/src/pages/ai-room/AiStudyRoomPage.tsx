@@ -43,6 +43,7 @@ import { useCourseContextStore } from '../../stores/course-context.store';
 import { useSessionStore } from '../../stores/session.store';
 import { buildUrlDraftKey } from '../../app/workspaceDialogueUtils';
 import type { AgentTraceEvent, Citation, ProfileDimension, SuggestedAction } from '../../types';
+import { AgentTracePanel } from '../../components/agent/AgentTracePanel';
 
 type ChatMessage = {
   id: string;
@@ -349,6 +350,7 @@ export function AiStudyRoomPage(): JSX.Element {
   const [assistantReferencesOpen, setAssistantReferencesOpen] = useState(true);
   const [activeMode, setActiveMode] = useState(responseModes[0].label);
   const [toolsCollapsed, setToolsCollapsed] = useState(false);
+  const [isAgentPanelOpen, setIsAgentPanelOpen] = useState(false);
   const [weaknessDiagnosed, setWeaknessDiagnosed] = useState(false);
   const [openSessionMenuId, setOpenSessionMenuId] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState('');
@@ -885,7 +887,12 @@ export function AiStudyRoomPage(): JSX.Element {
           </div>
         </div>
       )}
-
+      {/* Agent 工作流面板 */}
+      <AgentTracePanel
+        sessionId={currentSessionId || 'default-session'}
+        isOpen={isAgentPanelOpen}
+        onClose={() => setIsAgentPanelOpen(false)}
+      />
       <PageHeader
         title="AI 学习室"
         subtitle="围绕当前课程提问、追问、出题和生成学习材料。"
@@ -1170,13 +1177,22 @@ export function AiStudyRoomPage(): JSX.Element {
         <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[#E9ECEF] bg-white shadow-[0_24px_90px_rgba(15,23,42,0.07)]">
           <div className="bg-[#FBFCFE] px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm font-medium text-[#212529]">{contextSummary}</div>
-              <div className="inline-flex max-w-[260px] items-center gap-2 rounded-full border border-[#D7E2FF] bg-[#EEF5FF] px-3 py-1 text-[11px] font-medium text-[#2F6BFF]">
-                <Bot size={13} />
-                <span className="truncate">智课助手 · {streamStatus === readyStatusText ? '实时生成' : streamStatus}</span>
-              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-sm font-medium text-[#212529]">{contextSummary}</div>
+                <button
+                  onClick={() => setIsAgentPanelOpen(true)}
+                 className="inline-flex items-center gap-1.5 rounded-full border border-[#D7E2FF] bg-white px-3 py-1 text-[11px] font-medium text-[#2F6BFF] transition hover:bg-[#EEF5FF] hover:-translate-y-0.5"
+                 title="查看 Agent 工作流"
+              >
+                🤖 Agent 工作流
+              </button>
             </div>
-          </div>
+            <div className="inline-flex max-w-[260px] items-center gap-2 rounded-full border border-[#D7E2FF] bg-[#EEF5FF] px-3 py-1 text-[11px] font-medium text-[#2F6BFF]">
+              <Bot size={13} />
+              <span className="truncate">智课助手 · {streamStatus === readyStatusText ? '实时生成' : streamStatus}</span>
+           </div>
+         </div>
+        </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto bg-[linear-gradient(180deg,#FFFFFF,#F8FAFF)] p-5">
             {!hasMessages && (
