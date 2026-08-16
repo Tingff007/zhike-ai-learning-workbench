@@ -3,14 +3,18 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  BellRing,
   BookOpenCheck,
   CalendarDays,
+  ClipboardList,
   Compass,
   Cpu,
+  HelpCircle,
   History,
   Layers,
   Megaphone,
   Palette,
+  School,
   ShieldCheck,
   Trash2,
   UserCircle,
@@ -55,6 +59,14 @@ const studentMenuGroups: DockMenuGroup[] = [
     items: [
       { to: '/learning-profile', label: '学情画像', helper: '六维星轨与特征文字流', canvas: 'profile', Icon: UserCircle },
       { to: '/announcements', label: '公告中心', helper: '系统通知与历史公告', canvas: 'announcements', Icon: Megaphone },
+    ],
+  },
+  {
+    items: [
+      { to: '/classes', label: '我的班级', helper: '凭邀请码加入班级', canvas: 'classes', Icon: School },
+      { to: '/assignments', label: '课程作业', helper: '作业要求与在线提交', canvas: 'assignments', Icon: ClipboardList },
+      { to: '/quizzes', label: '随堂测验', helper: '在线作答与即时判分', canvas: 'quizzes', Icon: HelpCircle },
+      { to: '/notifications', label: '消息通知', helper: '助教提醒收件箱', canvas: 'notifications', Icon: BellRing },
     ],
   },
 ];

@@ -24,6 +24,7 @@ export type CanvasType =
   | 'profile'
   | 'announcements'
   | 'settings'
+  | 'classes'
   | 'builder'
   | 'knowledge'
   | 'gateway'
@@ -31,6 +32,9 @@ export type CanvasType =
   | 'monitoring'
   | 'announcementAdmin'
   | 'appearance'
+  | 'assignments'
+  | 'quizzes'
+  | 'notifications'
   | 'history';
 
 export type ArtifactWorkspaceMeta = {

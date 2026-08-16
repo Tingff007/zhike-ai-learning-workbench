@@ -386,6 +386,9 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 | `/learning-profile` | 学情画像 | 全局画像、课程画像、会话画像和多课程对比。 |
 | `/assessment` | 练习评估 | 可作答阶段测评、提交后自动评分、错题归因、AI 解析和画像更新。 |
 | `/personal-settings` | 个人设置 | 账号资料、课程分配、学习偏好、个人模型覆盖和隐私数据。 |
+| `/assignments` | 课程作业 | 查看助教布置的已发布作业，在线提交作答并查看提交状态。 |
+| `/quizzes` | 随堂测验 | 查看已发布测验，在线作答客观题并即时查看得分。 |
+| `/notifications` | 消息通知 | 助教预警、作业与测验提醒收件箱，支持未读标记与一键已读。 |
 | `/ai-room` | AI 学习室 | 与 `/dashboard` 的 AI 对话舱保持一致能力。 |
 | `/resource-workshop` | 资源工坊深链 | 解析资源任务并打开 `/dashboard` 的 ArtifactCanvas。 |
 
@@ -403,7 +406,20 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 | `/admin/chatdoc-config` | ChatDoc 配置 | 兼容入口，用于配置 ChatDoc / 云端 RAG。 |
 | `/admin/knowledge-base?panel=recycle` | 回收站 | 查看已删除课程和文档，支持还原或彻底删除。 |
 
+### 4.3 助教端路由
+
+| 路由 | 页面 | 定位 |
+|---|---|---|
+| `/ta` | 助教工作台 | 班级统计卡、提交/预警趋势图、待办事项与风险预警列表。 |
+| `/ta/class-management` | 班级管理 | 班级增删改、邀请码生成与重置、学生增删、名单查看与班级成绩 CSV 导出。 |
+| `/ta/grading` | 批改中心 | 作业批改、手动评分、AI 批改、测验创建发布与成绩统计。 |
+| `/ta/lesson-prep` | 备课助手 | AI 生成教案、教案编辑与发布。 |
+| `/ta/diagnosis` | 学情诊断 | 班级对比、薄弱点、雷达图、趋势线图与教学建议。 |
+| `/ta/resource-review` | 资源审核 | 学生生成资源的待审队列、通过与驳回。 |
+| `/ta/announcements` | 公告管理 | 助教公告创建、编辑、置顶、撤回与列表管理。 |
+
 ---
+
 
 ## 5. 核心调用边界
 
@@ -606,3 +622,48 @@ http://localhost:5173/dashboard?mock=1
 8. 每个画像维度应有来源、更新时间和置信度。
 9. 资源生成任务必须有 ResourceTaskCard 和 ArtifactCanvas。
 10. 管理端必须能分别配置 ChatProvider 和 CloudRagProvider。
+
+## 本地知识库（T-B-07，Plan B）
+
+项目保留原有讯飞 ChatDoc 云端实现，同时新增可配置的本地 `PDF → PyMuPDF → BGE-small-zh-v1.5 → PGVector → 检索` 链路。默认仍使用 ChatDoc，避免影响已有功能；验收本地方案时，将 `.env` 中的 `RAG_BACKEND` 改为 `local_pgvector`。
+
+本地模型权重不会提交到 Git。首次使用本地后端时，程序会在第一次导入或检索触发模型加载，并把模型缓存到 `LOCAL_EMBEDDING_CACHE_DIR`。Windows 本机可以把该变量设置为 `D:/zhike-models/bge-small-zh-v1.5`，仓库只保存配置和自动初始化逻辑。
+
+```text
+RAG_BACKEND=local_pgvector
+LOCAL_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
+LOCAL_EMBEDDING_DIMENSION=512
+LOCAL_EMBEDDING_CACHE_DIR=D:/zhike-models/bge-small-zh-v1.5
+LOCAL_EMBEDDING_DEVICE=cpu
+```
+
+安装依赖并完成验收：
+
+```bash
+pip install -r backend/requirements.txt
+alembic upgrade head
+# 管理端上传 PDF：POST /api/v1/admin/courses/{course_id}/documents
+# 知识库检索：GET /api/v1/admin/knowledge/search?course_id=...&q=...
+```
+
+本地后端只接受能直接提取文本的 PDF；扫描版 PDF 需要先 OCR。切片会保留页码、文档和切片编号，数据库向量列固定为 512 维；切换 Embedding 模型时必须同时检查维度和迁移。
+
+## 12. 助教端演示（TA Portal）
+
+助教端与助学端共用同一套前端体系，视觉与交互遵循 `docs/layout-spec.md`：页面顶部使用裸页头 Page Header，操作区使用左对齐的 PageHeaderToolbar，不引入自定义排版。
+
+| 路由 | 页面 | 能力 |
+|---|---|---|
+| `/ta` | 助教工作台 | 班级统计、趋势图、待办与预警。 |
+| `/ta/class-management` | 班级管理 | 班级/学生管理与成绩 CSV 导出；创建班级自动生成邀请码，支持复制与重置。 |
+| `/ta/grading` | 批改中心 | 作业批改、AI 批改、测验管理与成绩统计。 |
+| `/ta/lesson-prep` | 备课助手 | AI 生成与发布教案。 |
+| `/ta/diagnosis` | 学情诊断 | 班级对比、薄弱点与教学建议。 |
+| `/ta/resource-review` | 资源审核 | 学生资源审核队列。 |
+| `/ta/announcements` | 公告管理 | 公告创建、置顶与撤回。 |
+| `/assignments` | 课程作业 | 学生查看并提交作业。 |
+| `/quizzes` | 随堂测验 | 学生在线作答、即时判分。 |
+| `/notifications` | 消息通知 | 助教提醒收件箱。 |
+| `/classes` | 我的班级 | 学生凭邀请码加入班级、查看班内信息与邀请码、退出班级。 |
+
+演示账号（仅限本地开发/演示环境）：`ta@example.edu.cn`。密码由种子迁移 `backend/alembic/versions/0054_seed_ta_demo_data.py` 中的 `SEED_TA_PASSWORD` 环境变量提供，未配置时使用迁移内的演示默认值；正式环境必须通过 `.env` 配置强密码。`/register` 注册页支持选择学生或教师身份：教师注册后登录进入 `/ta` 助教工作台，学生注册后进入学生工作台，可凭教师提供的班级邀请码自助加入班级。

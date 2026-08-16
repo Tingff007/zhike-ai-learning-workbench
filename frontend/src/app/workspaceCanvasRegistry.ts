@@ -1,16 +1,20 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
+  BellRing,
   Brain,
   CalendarDays,
   CheckCircle2,
+  ClipboardList,
   Cpu,
+  HelpCircle,
   History,
   Images,
   Layers,
   Megaphone,
   MessageSquareText,
   Route,
+  School,
   ShieldCheck,
   Users,
   Wand2,
@@ -50,6 +54,10 @@ export const canvasMeta: Record<CanvasType, CanvasMeta> = {
   monitoring: { title: '云原生运维舱', subtitle: '云端资产、链路回调、成本额度与安全拒答', signal: 'Cloud Ops', Icon: Activity },
   announcementAdmin: { title: '公告发布后台', subtitle: '按优先级配置顶部条、弹窗、卡片与 Toast', signal: 'Notice Ops', Icon: Megaphone },
   appearance: { title: '界面设置', subtitle: '登录背景媒体、焦点、滤镜与遮罩预览', signal: 'Appearance', Icon: Images },
+  assignments: { title: '课程作业', subtitle: '查看作业要求并在线提交作答', signal: 'Homework', Icon: ClipboardList },
+  quizzes: { title: '随堂测验', subtitle: '在线作答客观题与即时判分', signal: 'Quiz', Icon: HelpCircle },
+  notifications: { title: '消息通知', subtitle: '助教提醒与作业测验通知收件箱', signal: 'Inbox', Icon: BellRing },
+  classes: { title: '我的班级', subtitle: '凭邀请码入班，查看班级信息与师生名单', signal: 'Class', Icon: School },
   history: { title: '会话历史', subtitle: '按课程隔离的历史对话轴', signal: 'History', Icon: History },
 };
 
@@ -68,6 +76,10 @@ export const routeCanvasRules: RouteCanvasRule[] = [
   { test: (pathname) => pathname.startsWith('/resource-hall'), canvas: 'hall', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/learning-profile'), canvas: 'profile', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/announcements'), canvas: 'announcements', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/classes'), canvas: 'classes', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/assignments'), canvas: 'assignments', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/quizzes'), canvas: 'quizzes', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/notifications'), canvas: 'notifications', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/personal-settings'), canvas: 'settings', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/ai-room'), canvas: 'chat', role: 'student', mode: 'standalone' },
   { test: (pathname) => pathname.startsWith('/dashboard'), canvas: 'dashboard', role: 'student', mode: 'standalone' },
@@ -80,6 +92,10 @@ export const brokenWindowCanvasTypes = new Set<CanvasType>([
   'hall',
   'profile',
   'announcements',
+  'classes',
+  'assignments',
+  'quizzes',
+  'notifications',
 ]);
 
 /** 判断当前画布是否属于五个破窗 overlay 页面。 */
@@ -101,6 +117,10 @@ const studentRoutePrefixes = [
   '/resource-hall',
   '/learning-profile',
   '/announcements',
+  '/classes',
+  '/assignments',
+  '/quizzes',
+  '/notifications',
   '/personal-settings',
 ] as const;
 

@@ -221,6 +221,7 @@ export type RegisterPayload = {
   name: string;
   email: string;
   password: string;
+  role?: 'student' | 'ta';
 };
 
 export type UpdateMePayload = {
@@ -2722,7 +2723,7 @@ export const api = {
       }),
   register: (payload: RegisterPayload) =>
     shouldUseMockData()
-      ? Promise.resolve({ access_token: authMock.token, token_type: 'bearer', user: { ...authMock.user, name: payload.name, email: payload.email, role: 'student' } } satisfies AuthResponse)
+      ? Promise.resolve({ access_token: authMock.token, token_type: 'bearer', user: { ...authMock.user, name: payload.name, email: payload.email, role: payload.role ?? 'student' } } satisfies AuthResponse)
       : request<AuthResponse>('/auth/register', {
         method: 'POST',
         credentials: 'include',

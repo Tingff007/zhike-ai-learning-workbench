@@ -12,11 +12,21 @@ const AiStudyRoomPage = lazy(() => import("../pages/ai-room/AiStudyRoomPage").th
 const LearningPathPage = lazy(() => import("../pages/learning-path/LearningPathPage").then((module) => ({ default: module.LearningPathPage })));
 const LearningCalendarPage = lazy(() => import("../pages/calendar/LearningCalendarPage").then((module) => ({ default: module.LearningCalendarPage })));
 const ResourceWorkshopPage = lazy(() => import("../pages/resource-workshop/ResourceWorkshopPage").then((module) => ({ default: module.ResourceWorkshopPage })));
+const LearningBehaviorPage = lazy(() => import("../pages/learning-behavior/LearningBehaviorPage").then((m) => ({ default: m.LearningBehaviorPage })));
 const AssessmentPage = lazy(() => import("../pages/assessment/AssessmentPage").then((module) => ({ default: module.AssessmentPage })));
+const AssessmentReportPage = lazy(() => import("../pages/learning-assessment/AssessmentReportPage").then((module) => ({ default: module.AssessmentReportPage })));
+const LearningAssessmentReportPage = lazy(() => import("../pages/learning-assessment/LearningAssessmentReportPage").then((module) => ({ default: module.LearningAssessmentReportPage })));
 const ResourceHallPage = lazy(() => import("../pages/resource-hall/ResourceHallPage").then((module) => ({ default: module.ResourceHallPage })));
 const LearningProfilePage = lazy(() => import("../pages/learning-profile/LearningProfilePage").then((module) => ({ default: module.LearningProfilePage })));
 const AnnouncementsPage = lazy(() => import("../pages/announcements/AnnouncementsPage").then((module) => ({ default: module.AnnouncementsPage })));
 const PersonalSettingsPage = lazy(() => import("../pages/personal-settings/PersonalSettingsPage").then((module) => ({ default: module.PersonalSettingsPage })));
+const StudentAssignmentsPage = lazy(() => import("../pages/ta-student/StudentAssignmentsPage").then((m) => ({ default: m.StudentAssignmentsPage })));
+const StudentQuizzesPage = lazy(() => import("../pages/ta-student/StudentQuizzesPage").then((m) => ({ default: m.StudentQuizzesPage })));
+const StudentNotificationsPage = lazy(() => import("../pages/ta-student/StudentNotificationsPage").then((m) => ({ default: m.StudentNotificationsPage })));
+const StudentClassesPage = lazy(() => import("../pages/ta-student/StudentClassesPage").then((m) => ({ default: m.StudentClassesPage })));
+
+const CodeSandboxDemoPage = lazy(() => import("../pages/dev/CodeSandboxDemoPage").then((module) => ({ default: module.default })));
+const SandboxPage = lazy(() => import("../pages/sandbox/SandboxPage").then((module) => ({ default: module.default })));
 
 const CourseBuilderPage = lazy(() => import("../pages/admin/CourseBuilderPage").then((module) => ({ default: module.CourseBuilderPage })));
 const ChatDocConfigPage = lazy(() => import("../pages/admin/ChatDocConfigPage").then((module) => ({ default: module.ChatDocConfigPage })));
@@ -65,11 +75,20 @@ export const router = createBrowserRouter([
           { path: "learning-path", element: withSuspense(<LearningPathPage />) },
           { path: "calendar", element: withSuspense(<LearningCalendarPage />) },
           { path: "resource-workshop", element: withSuspense(<ResourceWorkshopPage />) },
+          { path: "sandbox", element: withSuspense(<SandboxPage />) },
+          { path: 'learning-assessment/report', element: withSuspense(<LearningAssessmentReportPage />) },
           { path: "assessment", element: withSuspense(<AssessmentPage />) },
+          { path: "assessment/report", element: withSuspense(<AssessmentReportPage />) },
           { path: "resource-hall", element: withSuspense(<ResourceHallPage />) },
+          { path: "learning-behavior", element: withSuspense(<LearningBehaviorPage />) },
           { path: "learning-profile", element: withSuspense(<LearningProfilePage />) },
           { path: "announcements", element: withSuspense(<AnnouncementsPage />) },
+          { path: "classes", element: withSuspense(<StudentClassesPage />) },
+          { path: "assignments", element: withSuspense(<StudentAssignmentsPage />) },
+          { path: "quizzes", element: withSuspense(<StudentQuizzesPage />) },
+          { path: "notifications", element: withSuspense(<StudentNotificationsPage />) },
           { path: "personal-settings", element: withSuspense(<PersonalSettingsPage />) },
+          { path: "dev/code-sandbox", element: withSuspense(<CodeSandboxDemoPage />) },
           // 管理端路由（仅 admin）
           {
             element: <AdminGate />,
