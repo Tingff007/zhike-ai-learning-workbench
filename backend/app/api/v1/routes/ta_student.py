@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.v1.routes.ta import (
+from app.api.v1.routes.ta._shared import (
     _compute_is_late,
     _grade_quiz_attempt,
     _require_uuid,

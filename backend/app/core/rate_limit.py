@@ -69,6 +69,15 @@ def _consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> tuple
         return True, 0
 
 
+def consume_fixed_window(key: str, *, limit: int, window_seconds: int) -> bool:
+    """通用固定窗口限流，返回是否放行；Redis 不可用时放行（fail-open）。
+
+    供助教端预警生成等场景复用，避免各模块自建进程内存限流导致多实例失效。
+    """
+    allowed, _ = _consume_fixed_window(key, limit=limit, window_seconds=window_seconds)
+    return allowed
+
+
 def check_chat_rate_limit(user_id: str, course_id: str) -> None:
     """检查指定用户在课程对话中的分钟级限流。
 
