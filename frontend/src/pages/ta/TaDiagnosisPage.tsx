@@ -21,6 +21,14 @@ type TrendPoint = { date: string; score: number | null; event_count: number };
 type CompareRow = { class_id: string; name: string; avg_score: number; avg_mastery: number; weak_points: number; active_students: number; student_count: number };
 type StudentItem = { student_id: string; name: string; avg_mastery: number };
 type WeakPoint = { concept_id: string; concept: string; weak_rate: number; student_count: number; severity: string; suggested_practice: number };
+type ClassAdvice = {
+  class_id: string;
+  metrics: Record<string, number>;
+  priority_concepts: Array<{ concept_id: string; concept: string; avg_mastery: number }>;
+  summary: string;
+  suggestions: string[];
+  source: string;
+};
 
 /**
  * 学情诊断：班级对比、个体雷达与趋势、薄弱知识点与教学建议。
@@ -228,9 +236,7 @@ export function TaDiagnosisPage(): JSX.Element {
               ) : adviceQuery.isError ? (
                 <ErrorState label={(adviceQuery.error as Error)?.message || '教学建议生成失败'} />
               ) : (
-                <pre className="whitespace-pre-wrap rounded-md border border-zinc-100 bg-zinc-50 p-4 text-sm text-zinc-700">
-                  {JSON.stringify(adviceQuery.data ?? {}, null, 2)}
-                </pre>
+                <AdviceContent advice={adviceQuery.data as ClassAdvice | undefined} />
               )}
             </div>
             <div className="mt-4 flex justify-end">
@@ -239,6 +245,57 @@ export function TaDiagnosisPage(): JSX.Element {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * 教学建议内容区：将后端返回的结构化诊断数据渲染为可读的总结、重点知识点与建议列表。
+ */
+function AdviceContent({ advice }: { advice: ClassAdvice | undefined }): JSX.Element {
+  if (!advice) {
+    return <p className="text-sm text-zinc-400">暂无建议内容</p>;
+  }
+
+  return (
+    <div className="space-y-5 text-sm">
+      <section>
+        <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+          <Lightbulb size={14} /> 学情总结
+        </h4>
+        <p className="leading-relaxed text-zinc-700">{advice.summary}</p>
+      </section>
+
+      {advice.priority_concepts.length > 0 ? (
+        <section>
+          <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+            <AlertTriangle size={14} /> 重点关注知识点
+          </h4>
+          <ul className="space-y-1.5">
+            {advice.priority_concepts.map((item) => (
+              <li key={item.concept_id} className="flex items-center justify-between rounded-md border border-zinc-100 px-3 py-2">
+                <span className="text-zinc-800">{item.concept}</span>
+                <span className="text-xs text-zinc-500">平均掌握度 {item.avg_mastery}%</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section>
+        <h4 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-zinc-500">
+          <BookOpenCheck size={14} /> 教学建议
+        </h4>
+        {advice.suggestions.length > 0 ? (
+          <ol className="list-decimal space-y-1.5 pl-5">
+            {advice.suggestions.map((item, index) => (
+              <li key={index} className="leading-relaxed text-zinc-700">{item}</li>
+            ))}
+          </ol>
+        ) : (
+          <p className="text-sm text-zinc-400">暂无建议</p>
+        )}
+      </section>
     </div>
   );
 }

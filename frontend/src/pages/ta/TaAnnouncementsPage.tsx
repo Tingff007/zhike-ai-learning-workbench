@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Megaphone, Pencil, Pin, PinOff, Plus, Trash2, XCircle } from 'lucide-react';
 import {
-  taCreateAnnouncement, taDeleteAnnouncement, taListAnnouncements, taPinAnnouncement,
+  taCreateAnnouncement, taDeleteAnnouncement, taListAnnouncements, taListClasses, taPinAnnouncement,
   taUpdateAnnouncement, taWithdrawAnnouncement, type TaAnnouncement,
 } from '../../api/ta';
 import { PageHeader, PageHeaderToolbar } from '../../components/shared/PageHeader';
@@ -13,7 +13,7 @@ const inputClass = 'w-full rounded-md border border-zinc-300 px-3 py-2 text-sm o
 const primaryButtonClass = 'inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50';
 const secondaryButtonClass = 'inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50';
 
-type AnnouncementForm = { title: string; body: string; announcement_type: string };
+type AnnouncementForm = { title: string; body: string; announcement_type: string; class_ids: string[] };
 
 /**
  * 公告通知：面向班级发布公告，支持置顶与撤回。
@@ -22,19 +22,20 @@ export function TaAnnouncementsPage(): JSX.Element {
   const queryClient = useQueryClient();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TaAnnouncement | null>(null);
-  const [form, setForm] = useState<AnnouncementForm>({ title: '', body: '', announcement_type: 'general' });
+  const [form, setForm] = useState<AnnouncementForm>({ title: '', body: '', announcement_type: 'general', class_ids: [] });
   const [formError, setFormError] = useState<string | null>(null);
 
   const announcementsQuery = useQuery({ queryKey: ['ta-announcements'], queryFn: () => taListAnnouncements() });
+  const classesQuery = useQuery({ queryKey: ['ta-classes'], queryFn: () => taListClasses() });
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['ta-announcements'] });
 
-  const saveMutation = useMutation({
+  const saveMutation = useMutation<unknown, Error, void>({
     mutationFn: () => (editing
       ? taUpdateAnnouncement(editing.id, { title: form.title, body: form.body, announcement_type: form.announcement_type })
-      : taCreateAnnouncement({ title: form.title, body: form.body, announcement_type: form.announcement_type })),
+      : taCreateAnnouncement({ title: form.title, body: form.body, announcement_type: form.announcement_type, class_ids: form.class_ids })),
     onSuccess: () => { invalidate(); setFormOpen(false); setFormError(null); },
-    onError: (error) => setFormError((error as Error).message),
+    onError: (error) => setFormError(error.message),
   });
 
   const deleteMutation = useMutation({ mutationFn: (id: string) => taDeleteAnnouncement(id), onSuccess: () => invalidate() });
@@ -43,16 +44,25 @@ export function TaAnnouncementsPage(): JSX.Element {
 
   function openCreate(): void {
     setEditing(null);
-    setForm({ title: '', body: '', announcement_type: 'general' });
+    setForm({ title: '', body: '', announcement_type: 'general', class_ids: [] });
     setFormError(null);
     setFormOpen(true);
   }
 
   function openEdit(item: TaAnnouncement): void {
     setEditing(item);
-    setForm({ title: item.title, body: item.body, announcement_type: item.announcement_type });
+    setForm({ title: item.title, body: item.body, announcement_type: item.announcement_type, class_ids: [] });
     setFormError(null);
     setFormOpen(true);
+  }
+
+  function toggleClass(classId: string): void {
+    setForm((prev) => ({
+      ...prev,
+      class_ids: prev.class_ids.includes(classId)
+        ? prev.class_ids.filter((id) => id !== classId)
+        : [...prev.class_ids, classId],
+    }));
   }
 
   return (
@@ -87,7 +97,7 @@ export function TaAnnouncementsPage(): JSX.Element {
                     {!item.is_active ? <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500">已撤回</span> : null}
                   </div>
                   <p className="mt-1.5 whitespace-pre-wrap text-sm text-zinc-600">{item.body}</p>
-                  <div className="mt-2 text-xs text-zinc-400">{item.announcement_type} · {formatBeijingDateTimeCompact(item.created_at, '—')}</div>
+                  <div className="mt-2 text-xs text-zinc-400">{item.announcement_type} · {item.class_name ?? '全体'} · {formatBeijingDateTimeCompact(item.created_at, '—')}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {item.is_active ? (
@@ -136,6 +146,36 @@ export function TaAnnouncementsPage(): JSX.Element {
                   <option value="exam">考试通知</option>
                 </select>
               </label>
+              {!editing ? (
+                <div className="text-xs text-zinc-500">
+                  <span className="mb-1.5 block">目标班级（不选择则发送给全体学生）</span>
+                  {classesQuery.isLoading ? (
+                    <p className="text-zinc-400">正在加载班级...</p>
+                  ) : classesQuery.isError ? (
+                    <p className="text-red-600">班级列表加载失败</p>
+                  ) : (classesQuery.data ?? []).length === 0 ? (
+                    <p className="text-zinc-400">暂无班级，将发送给全体学生</p>
+                  ) : (
+                    <div className="mt-1 max-h-44 space-y-0.5 overflow-auto rounded-md border border-zinc-200 bg-zinc-50 p-1.5">
+                      {(classesQuery.data ?? []).map((cls) => {
+                        const checked = form.class_ids.includes(cls.id);
+                        return (
+                          <label key={cls.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 hover:bg-zinc-100">
+                            <input
+                              type="checkbox"
+                              className="h-3.5 w-3.5 accent-zinc-900"
+                              checked={checked}
+                              onChange={() => toggleClass(cls.id)}
+                            />
+                            <span className="flex-1 truncate text-zinc-700">{cls.name}</span>
+                            <span className="text-xs text-zinc-400">{cls.student_count} 人</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : null}
               {formError ? <p className="text-xs text-red-600">{formError}</p> : null}
             </div>
             <div className="mt-5 flex justify-end gap-2">

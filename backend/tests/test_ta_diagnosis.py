@@ -106,6 +106,20 @@ def test_parse_diagnosis_text_invalid() -> None:
     assert _parse_diagnosis_text('{"suggestions": []}') is None  # 缺 summary
 
 
+def test_parse_diagnosis_text_rejects_template_placeholders() -> None:
+    # 模型照抄模板占位文案时应返回 None，触发规则降级
+    raw = '{"summary": "一段班级学情总结（1-3 句）", "suggestions": ["建议1", "建议2", "建议3"]}'
+    assert _parse_diagnosis_text(raw) is None
+
+
+def test_parse_diagnosis_text_filters_placeholder_suggestions() -> None:
+    # 总结有效、建议混入占位项时应过滤占位项
+    raw = '{"summary": "整体需加强", "suggestions": ["补基础", "建议1", "多练习"]}'
+    parsed = _parse_diagnosis_text(raw)
+    assert parsed["summary"] == "整体需加强"
+    assert parsed["suggestions"] == ["补基础", "多练习"]
+
+
 def test_diagnosis_fallback_with_data() -> None:
     metrics = {
         "student_count": 30, "concepts_total": 10, "avg_mastery": 55,

@@ -129,6 +129,7 @@ export type TaAnnouncement = {
   body: string;
   announcement_type: string;
   class_id: string | null;
+  class_name: string | null;
   is_pinned: boolean;
   is_active: boolean;
   created_at: string | null;
@@ -347,8 +348,14 @@ export function taListAnnouncements(): Promise<TaAnnouncement[]> {
   return request<TaAnnouncement[]>('/ta/announcements');
 }
 
-export function taCreateAnnouncement(payload: { title: string; body: string; announcement_type?: string; class_id?: string | null }): Promise<TaAnnouncement> {
-  return request<TaAnnouncement>('/ta/announcements', { method: 'POST', body: JSON.stringify(payload) });
+export function taCreateAnnouncement(payload: {
+  title: string;
+  body: string;
+  announcement_type?: string;
+  class_id?: string | null;
+  class_ids?: string[] | null;
+}): Promise<{ ids: string[]; id: string | null; title: string; count: number; message: string }> {
+  return request<{ ids: string[]; id: string | null; title: string; count: number; message: string }>('/ta/announcements', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export function taUpdateAnnouncement(announcementId: string, payload: { title?: string; body?: string; announcement_type?: string }): Promise<{ id: string }> {

@@ -165,6 +165,9 @@ alembic upgrade head
 cd backend
 # 同一终端沿用上一步已激活的虚拟环境，无需重复 source
 python run_dev.py
+cd D:\Develop\Challenge Cup\backend
+.venv\Scripts\activate
+python run_dev.py
 ```
 
 后端运行在 `http://localhost:8001`，支持热重载。
@@ -174,6 +177,8 @@ python run_dev.py
 ```bash
 cd frontend
 corepack pnpm dev
+cd D:\Develop\Challenge Cup\frontend
+npm run dev
 ```
 
 前端运行在 `http://localhost:5173`，API 请求通过 Vite 代理到 `localhost:8001`。
