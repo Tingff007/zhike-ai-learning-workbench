@@ -23,6 +23,17 @@ def _generate_code() -> str:
 
 
 def upgrade() -> None:
+    """增加班级邀请码字段（幂等）。
+
+    0001_initial_schema 通过 Base.metadata.create_all 建表时，会按当前模型定义
+    （TaClass.invite_code 唯一非空）直接建出该列，因此这里需先探测列是否存在，
+    已存在则跳过，避免重复加列报错。
+    """
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    existing_columns = [c["name"] for c in inspector.get_columns("ta_classes")]
+    if "invite_code" in existing_columns:
+        return
     # 先加可空列，回填存量班级，再收紧为唯一非空。
     op.add_column("ta_classes", sa.Column("invite_code", sa.String(length=16), nullable=True))
     conn = op.get_bind()

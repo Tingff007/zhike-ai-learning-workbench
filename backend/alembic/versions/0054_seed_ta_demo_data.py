@@ -81,11 +81,13 @@ def upgrade() -> None:
         )
     # 3) 班级（course_id 取演示环境已有课程）
     course_id = bind.execute(sa.text("SELECT id FROM courses ORDER BY created_at LIMIT 1")).scalar()
+    # 邀请码字段为 NOT NULL（模型定义），种子需显式提供固定邀请码，便于演示学生凭码入班。
+    demo_invite_codes = ["DL2026AA", "DL2026BB"]
     for index, class_id in enumerate(CLASS_IDS):
         execute(
             """
-            INSERT INTO ta_classes (id, name, description, course_id, ta_user_id, is_active, created_at, updated_at)
-            VALUES (:id, :name, :description, :course_id, :ta_user_id, true, NOW(), NOW())
+            INSERT INTO ta_classes (id, name, description, course_id, ta_user_id, invite_code, is_active, created_at, updated_at)
+            VALUES (:id, :name, :description, :course_id, :ta_user_id, :invite_code, true, NOW(), NOW())
             ON CONFLICT (id) DO NOTHING
             """,
             id=class_id,
@@ -93,6 +95,7 @@ def upgrade() -> None:
             description="助教端演示班级",
             course_id=course_id,
             ta_user_id=TA_USER_ID,
+            invite_code=demo_invite_codes[index],
         )
     # 4) 班级-学生关系（前 3 名进 1 班，后 3 名进 2 班）
     for index, student_id in enumerate(STUDENT_IDS):
