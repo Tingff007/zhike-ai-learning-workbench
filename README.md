@@ -165,7 +165,7 @@ alembic upgrade head
 cd backend
 # 同一终端沿用上一步已激活的虚拟环境，无需重复 source
 python run_dev.py
-cd D:\Develop\Challenge Cup\backend
+cd "D:\Develop\Challenge Cup\backend"
 .venv\Scripts\activate
 python run_dev.py
 ```
@@ -177,7 +177,7 @@ python run_dev.py
 ```bash
 cd frontend
 corepack pnpm dev
-cd D:\Develop\Challenge Cup\frontend
+cd "D:\Develop\Challenge Cup\frontend"
 npm run dev
 ```
 
@@ -563,6 +563,14 @@ alembic upgrade head
 ```text
 账号：admin@example.edu.cn
 密码：admin123
+```
+
+助教端与学生端演示账号（由迁移 `0054_seed_ta_demo_data`、`0063_student_seed_passwords` 种入，密码可分别用 `SEED_TA_PASSWORD`、`SEED_STUDENT_PASSWORD` 覆盖）：
+
+```text
+助教：ta@example.edu.cn  密码：ta123456
+学生：student1@example.edu.cn ~ student6@example.edu.cn  密码：student123
+（student1~3 在「深度学习 01 班」，student4~6 在「深度学习 02 班」，学生只能看到自己班级发布的作业/测验）
 ```
 
 若比赛演示需要用已存在账号快速登录，可在本地 `.env` 中临时开启免密码校验：

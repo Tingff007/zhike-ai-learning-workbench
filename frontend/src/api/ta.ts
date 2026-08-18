@@ -41,12 +41,27 @@ export type TaAssignment = {
   class_id: string;
   course_id: string | null;
   concept_id: string | null;
+  question_type: string;
+  options: string[];
+  correct_answer: string | null;
   total_score: number;
   due_at: string | null;
   late_policy: string;
   late_penalty_ratio: number;
   status: 'draft' | 'published' | 'closed';
   created_at: string | null;
+  submission_count?: number;
+  graded_count?: number;
+  question_count?: number;
+  questions?: Array<{
+    id: string;
+    order_index: number;
+    question_type: string;
+    prompt: string;
+    options: string[];
+    answer: string | null;
+    score: number;
+  }>;
 };
 
 export type TaSubmission = {
@@ -54,6 +69,15 @@ export type TaSubmission = {
   student_id: string;
   student_name: string;
   answer: string;
+  answers?: Record<string, string> | null;
+  questions?: Array<{
+    id: string;
+    question_type: string;
+    prompt: string;
+    options: string[];
+    answer: string | null;
+    score: number;
+  }>;
   submitted_at: string | null;
   is_late: boolean;
   attempt_number: number;
@@ -85,6 +109,17 @@ export type TaGradingRecord = {
   status: 'pending' | 'graded';
   created_at: string | null;
   updated_at: string | null;
+  /** 多题作业：结构化逐题作答 {question_id: 作答} 与题目快照（含标准答案） */
+  student_answers?: Record<string, string>;
+  questions?: Array<{
+    id: string;
+    order_index: number;
+    question_type: string;
+    prompt: string;
+    options: string[];
+    answer: string | null;
+    score: number;
+  }>;
 };
 
 export type TaQuizQuestion = {
@@ -107,6 +142,17 @@ export type TaQuiz = {
   total_score: number;
   submission_count: number;
   created_at: string | null;
+};
+
+export type TaQuestionBankItem = {
+  id: string;
+  course_id: string | null;
+  question_type: string;
+  prompt: string;
+  options: string[];
+  answer: string;
+  score: number;
+  source: string;
 };
 
 export type TaAlert = {
@@ -216,27 +262,45 @@ export function taListAssignments(): Promise<TaAssignment[]> {
   return request<TaAssignment[]>('/ta/assignments');
 }
 
+export type TaQuestionInput = {
+  prompt: string;
+  question_type: string;
+  options?: string[] | null;
+  answer?: string | null;
+  score: number;
+};
+
 export function taCreateAssignment(payload: {
   title: string;
   description?: string | null;
   class_id: string;
   course_id?: string | null;
   concept_id?: string | null;
+  question_type?: string;
+  options?: string[] | null;
+  correct_answer?: string | null;
   total_score?: number;
   due_at?: string | null;
   late_policy?: string;
   late_penalty_ratio?: number;
-}): Promise<{ id: string }> {
-  return request<{ id: string }>('/ta/assignments', { method: 'POST', body: JSON.stringify(payload) });
+  question_ids?: string[];
+  questions?: TaQuestionInput[];
+}): Promise<{ id: string; question_count?: number }> {
+  return request<{ id: string; question_count?: number }>('/ta/assignments', { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export function taUpdateAssignment(assignmentId: string, payload: {
   title?: string;
   description?: string | null;
+  question_type?: string;
+  options?: string[] | null;
+  correct_answer?: string | null;
   total_score?: number;
   due_at?: string | null;
   late_policy?: string;
   late_penalty_ratio?: number;
+  question_ids?: string[];
+  questions?: TaQuestionInput[];
 }): Promise<{ id: string }> {
   return request<{ id: string }>(`/ta/assignments/${encodeURIComponent(assignmentId)}`, { method: 'PUT', body: JSON.stringify(payload) });
 }
@@ -257,7 +321,7 @@ export function taListLessonPlans(): Promise<TaLessonPlan[]> {
   return request<TaLessonPlan[]>('/ta/lesson-plans');
 }
 
-export function taUpdateLessonPlan(planId: string, payload: { title?: string; chapter?: string | null; outline?: string | null }): Promise<{ id: string }> {
+export function taUpdateLessonPlan(planId: string, payload: { title?: string; chapter?: string | null; outline?: string | null; content?: Record<string, unknown> | null }): Promise<{ id: string }> {
   return request<{ id: string }>(`/ta/lesson-plans/${encodeURIComponent(planId)}`, { method: 'PUT', body: JSON.stringify(payload) });
 }
 
@@ -265,8 +329,21 @@ export function taPublishLessonPlan(planId: string): Promise<{ message: string }
   return request<{ message: string }>(`/ta/lesson-plans/${encodeURIComponent(planId)}/publish`, { method: 'POST' });
 }
 
-export function taGenerateLessonPlan(payload: { course_id: string; chapter: string; title?: string }): Promise<TaLessonPlan> {
-  return request<TaLessonPlan>('/ta/lesson-plans/generate', { method: 'POST', body: JSON.stringify(payload), timeoutMs: 120_000 });
+export function taDeleteLessonPlan(planId: string): Promise<{ id: string; message: string }> {
+  return request<{ id: string; message: string }>(`/ta/lesson-plans/${encodeURIComponent(planId)}`, { method: 'DELETE' });
+}
+
+export function taDeleteLessonPlans(planIds: string[]): Promise<{ deleted: number; skipped: string[]; message: string }> {
+  return request<{ deleted: number; skipped: string[]; message: string }>('/ta/lesson-plans', { method: 'DELETE', body: JSON.stringify({ plan_ids: planIds }) });
+}
+
+export function taGenerateLessonPlan(payload: { course_id?: string | null; chapter?: string | null; title: string; requirements?: string | null }): Promise<TaLessonPlan> {
+  const query = new URLSearchParams();
+  query.set('title', payload.title);
+  if (payload.course_id) query.set('course_id', payload.course_id);
+  if (payload.chapter) query.set('chapter', payload.chapter);
+  if (payload.requirements) query.set('requirements', payload.requirements);
+  return request<TaLessonPlan>(`/ta/lesson-plans/generate?${query.toString()}`, { method: 'POST', timeoutMs: 120_000 });
 }
 
 export function taListGrading(params?: { status?: string; class_id?: string }): Promise<TaGradingRecord[]> {
@@ -281,6 +358,10 @@ export function taGradingStats(): Promise<{ total: number; pending: number; grad
   return request<{ total: number; pending: number; graded: number; avg_score: number | null }>('/ta/grading/stats');
 }
 
+export function taGetGradingDetail(recordId: string): Promise<TaGradingRecord> {
+  return request<TaGradingRecord>(`/ta/grading/${encodeURIComponent(recordId)}`);
+}
+
 export function taManualGrade(recordId: string, score: number, taComment?: string): Promise<{ message: string }> {
   const query = new URLSearchParams({ record_id: recordId, score: String(score) });
   if (taComment) query.set('ta_comment', taComment);
@@ -288,10 +369,17 @@ export function taManualGrade(recordId: string, score: number, taComment?: strin
 }
 
 export function taAiGrade(recordId: string): Promise<{ id: string; score: number | null; source: string }> {
-  return request<{ id: string; score: number | null; source: string }>('/ta/grading/ai-grade', {
+  return request<{ id: string; score: number | null; source: string }>(`/ta/grading/ai-grade?record_id=${encodeURIComponent(recordId)}`, {
     method: 'POST',
-    body: JSON.stringify({ record_id: recordId }),
     timeoutMs: 120_000,
+  });
+}
+
+export function taAiGradeBatch(recordIds: string[]): Promise<{ graded: number; failed: number; results: Array<{ record_id: string; ok: boolean; score?: number | null; source?: string; message?: string }>; message: string }> {
+  return request<{ graded: number; failed: number; results: Array<{ record_id: string; ok: boolean; score?: number | null; source?: string; message?: string }>; message: string }>('/ta/grading/ai-grade/batch', {
+    method: 'POST',
+    body: JSON.stringify({ record_ids: recordIds }),
+    timeoutMs: 600_000,
   });
 }
 
@@ -307,7 +395,15 @@ export function taGetQuiz(quizId: string): Promise<TaQuiz & { questions: TaQuizQ
   return request<TaQuiz & { questions: TaQuizQuestion[] }>(`/ta/quizzes/${encodeURIComponent(quizId)}`);
 }
 
-export function taCreateQuiz(payload: { title: string; class_id: string; course_id?: string | null; description?: string | null; questions: TaQuizQuestion[] }): Promise<{ id: string }> {
+export function taListQuestionBank(params?: { question_type?: string; keyword?: string }): Promise<TaQuestionBankItem[]> {
+  const query = new URLSearchParams();
+  if (params?.question_type) query.set('question_type', params.question_type);
+  if (params?.keyword) query.set('keyword', params.keyword);
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return request<TaQuestionBankItem[]>(`/ta/question-bank${suffix}`);
+}
+
+export function taCreateQuiz(payload: { title: string; class_id: string; course_id?: string | null; description?: string | null; question_ids?: string[]; questions?: TaQuizQuestion[] }): Promise<{ id: string }> {
   return request<{ id: string }>('/ta/quizzes', { method: 'POST', body: JSON.stringify(payload) });
 }
 
@@ -321,6 +417,14 @@ export function taPublishQuiz(quizId: string): Promise<{ message: string }> {
 
 export function taCloseQuiz(quizId: string): Promise<{ message: string }> {
   return request<{ message: string }>(`/ta/quizzes/${encodeURIComponent(quizId)}/close`, { method: 'POST' });
+}
+
+export function taDeleteQuiz(quizId: string): Promise<{ id: string; message: string }> {
+  return request<{ id: string; message: string }>(`/ta/quizzes/${encodeURIComponent(quizId)}`, { method: 'DELETE' });
+}
+
+export function taDeleteQuizzes(quizIds: string[]): Promise<{ deleted: number; skipped: string[]; message: string }> {
+  return request<{ deleted: number; skipped: string[]; message: string }>('/ta/quizzes', { method: 'DELETE', body: JSON.stringify({ quiz_ids: quizIds }) });
 }
 
 export function taQuizStats(quizId: string): Promise<{ quiz_id: string; title: string; submission_count: number; avg_score: number | null; full_score: number; questions: Array<{ question_id: string; prompt: string; correct_count: number; total_count: number; accuracy: number }> }> {
@@ -445,12 +549,76 @@ export function studentLeaveClass(classId: string): Promise<{ message: string }>
   return request<{ message: string }>(`/ta-student/classes/${encodeURIComponent(classId)}/leave`, { method: 'DELETE' });
 }
 
-export function studentListAssignments(): Promise<Array<{ id: string; title: string; description: string | null; total_score: number; due_at: string | null; late_policy: string; status: string; created_at: string | null; submitted: boolean; attempt_number: number; submitted_at: string | null }>> {
-  return request<Array<{ id: string; title: string; description: string | null; total_score: number; due_at: string | null; late_policy: string; status: string; created_at: string | null; submitted: boolean; attempt_number: number; submitted_at: string | null }>>('/ta-student/assignments');
+export type StudentAssignment = {
+  id: string;
+  title: string;
+  description: string | null;
+  question_type: string;
+  options: string[];
+  total_score: number;
+  question_count: number;
+  due_at: string | null;
+  late_policy: string;
+  status: string;
+  created_at: string | null;
+  submitted: boolean;
+  attempt_number: number;
+  score: number | null;
+  submitted_at: string | null;
+};
+
+export type StudentAssignmentQuestion = {
+  id: string;
+  prompt: string;
+  question_type: string;
+  options: string[] | null;
+  score: number;
+};
+
+export function studentListAssignments(): Promise<StudentAssignment[]> {
+  return request<StudentAssignment[]>('/ta-student/assignments');
 }
 
-export function studentSubmitAssignment(assignmentId: string, answer: string): Promise<{ id: string; is_late: boolean; attempt_number: number; grading_record_id: string; message: string }> {
-  return request<{ id: string; is_late: boolean; attempt_number: number; grading_record_id: string; message: string }>(`/ta-student/assignments/${encodeURIComponent(assignmentId)}/submit`, { method: 'POST', body: JSON.stringify({ answer }) });
+export function studentGetAssignmentQuestions(assignmentId: string): Promise<{
+  id: string;
+  title: string;
+  description: string | null;
+  question_type: string;
+  options: string[];
+  total_score: number;
+  questions: StudentAssignmentQuestion[];
+}> {
+  return request<{
+    id: string;
+    title: string;
+    description: string | null;
+    question_type: string;
+    options: string[];
+    total_score: number;
+    questions: StudentAssignmentQuestion[];
+  }>(`/ta-student/assignments/${encodeURIComponent(assignmentId)}/questions`);
+}
+
+export function studentSubmitAssignment(assignmentId: string, payload: { answer?: string; answers?: Record<string, string> }): Promise<{
+  id: string;
+  is_late: boolean;
+  attempt_number: number;
+  grading_record_id: string;
+  score: number | null;
+  total_score?: number;
+  has_subjective?: boolean;
+  message: string;
+}> {
+  return request<{
+    id: string;
+    is_late: boolean;
+    attempt_number: number;
+    grading_record_id: string;
+    score: number | null;
+    total_score?: number;
+    has_subjective?: boolean;
+    message: string;
+  }>(`/ta-student/assignments/${encodeURIComponent(assignmentId)}/submit`, { method: 'POST', body: JSON.stringify(payload) });
 }
 
 export function studentListQuizzes(): Promise<Array<{ id: string; title: string; description: string | null; created_at: string | null; submitted: boolean; score: number | null }>> {

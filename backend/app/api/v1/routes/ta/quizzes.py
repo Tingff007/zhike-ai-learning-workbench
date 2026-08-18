@@ -10,13 +10,16 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db, require_ta
 from ._shared import (
     TaClass,
+    TaQuestionBank,
     TaQuiz,
     TaQuizAttempt,
     TaQuizQuestion,
     User,
+    _OBJECTIVE_QUESTION_TYPES,
     _apply_page,
     _class_student_ids,
     _create_notifications,
+    _normalize_choice_answer,
     _require_uuid,
     _user_internal_id,
 )
@@ -25,7 +28,7 @@ router = APIRouter(prefix="/ta", tags=["ta-portal"])
 
 
 class QuizQuestionInput(BaseModel):
-    """测验题目输入。"""
+    """测验题目输入（手动出题时使用）。"""
     prompt: str
     question_type: str = "single_choice"
     options: list[str] | None = None
@@ -34,33 +37,54 @@ class QuizQuestionInput(BaseModel):
 
 
 class QuizCreateRequest(BaseModel):
-    """创建测验请求体（题目嵌套）。"""
+    """创建测验请求体（题目嵌套）。
+
+    question_ids 用于从本地测试题库选题（推荐）；questions 用于手动输入题目。
+    两者可同时提供，题库题在前、手动题在后；至少提供其一。
+    """
     title: str
     class_id: str
     course_id: str | None = None
     description: str | None = None
-    questions: list[QuizQuestionInput] = Field(min_length=1)
+    question_ids: list[str] | None = None
+    questions: list[QuizQuestionInput] | None = None
 
 
 class QuizUpdateRequest(BaseModel):
     """编辑测验请求体（仅标题/描述/题目，题目整体替换）。"""
     title: str | None = None
     description: str | None = None
+    question_ids: list[str] | None = None
     questions: list[QuizQuestionInput] | None = None
+
+
+class QuizBatchDeleteRequest(BaseModel):
+    """批量删除测验请求体。"""
+    quiz_ids: list[str] = Field(min_length=1, max_length=200)
+
+
+def _delete_quiz_record(db: Session, quiz: TaQuiz) -> None:
+    """删除单个测验及其题目/作答记录（仅草稿可删，由调用方先校验状态）。"""
+    db.execute(delete(TaQuizQuestion).where(TaQuizQuestion.quiz_id == quiz.id))
+    db.execute(delete(TaQuizAttempt).where(TaQuizAttempt.quiz_id == quiz.id))
+    db.delete(quiz)
 
 
 def _quiz_stats_by_question(
     attempts: list[Any],
     questions: list[Any],
 ) -> list[dict[str, Any]]:
-    """每题正确率统计：返回 [{question_id, prompt, correct_count, total_count, accuracy}]。"""
+    """每题正确率统计：返回 [{question_id, prompt, correct_count, total_count, accuracy}]。
+
+    判分口径与 _grade_quiz_attempt 一致（多选集合比较、填空忽略大小写）。
+    """
     stats: list[dict[str, Any]] = []
     for q in questions:
         qid = str(q.id)
         total = len(attempts)
         correct = sum(
             1 for a in attempts
-            if (a.answers or {}).get(qid) == q.answer
+            if _answer_matches((a.answers or {}).get(qid), q)
         )
         stats.append({
             "question_id": qid,
@@ -70,6 +94,17 @@ def _quiz_stats_by_question(
             "accuracy": round(correct / total, 2) if total else None,
         })
     return stats
+
+
+def _answer_matches(student: Any, q: Any) -> bool:
+    """单题作答与标准答案是否匹配（多选集合比较、填空忽略大小写）。"""
+    if student is None or str(student).strip() == "":
+        return False
+    if q.question_type == "multiple_choice":
+        return _normalize_choice_answer(student) == _normalize_choice_answer(q.answer or "")
+    if q.question_type == "blank":
+        return str(student).strip().lower() == str(q.answer or "").strip().lower()
+    return student == q.answer
 
 
 def _quiz_to_dict(q: TaQuiz) -> dict[str, Any]:
@@ -100,13 +135,101 @@ def _save_quiz_questions(db: Session, quiz_id: uuid.UUID, questions: list[QuizQu
         ))
 
 
+def _validate_question_input(qi: QuizQuestionInput) -> None:
+    """校验单题字段合法性（题型枚举与判断题/多选答案格式）。"""
+    if qi.question_type not in _OBJECTIVE_QUESTION_TYPES:
+        raise HTTPException(status_code=400, detail=f"不支持的题型: {qi.question_type}")
+    if qi.question_type == "true_false" and qi.answer not in {"T", "F"}:
+        raise HTTPException(status_code=400, detail="判断题答案须为 T 或 F")
+    if qi.question_type == "multiple_choice" and not qi.answer:
+        raise HTTPException(status_code=400, detail="多选题必须提供标准答案（选项字母，逗号分隔）")
+    if qi.question_type in {"single_choice", "multiple_choice"} and not qi.options:
+        raise HTTPException(status_code=400, detail="选择题必须提供选项")
+
+
+def _resolve_quiz_questions(
+    db: Session,
+    question_ids: list[str] | None,
+    questions: list[QuizQuestionInput] | None,
+) -> list[QuizQuestionInput]:
+    """把「从题库选题 + 手动输入」合并为统一的题目列表（题库题在前）。
+
+    从题库选取的题目会按当前题库内容生成快照，保证布置后题目内容稳定；
+    至少需要提供一种题目来源，否则返回 400。
+    """
+    merged: list[QuizQuestionInput] = []
+    if question_ids:
+        id_set = list(dict.fromkeys(question_ids))
+        uuid_set = [_require_uuid(qid, "题库题目不存在") for qid in id_set]
+        bank_questions = db.execute(
+            select(TaQuestionBank).where(TaQuestionBank.id.in_(uuid_set))
+        ).scalars().all()
+        found = {str(q.id) for q in bank_questions}
+        missing = [qid for qid in id_set if qid not in found]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"题库中不存在以下题目: {', '.join(missing[:5])}")
+        merged.extend([
+            QuizQuestionInput(
+                prompt=q.prompt,
+                question_type=q.question_type,
+                options=q.options,
+                answer=q.answer,
+                score=q.score,
+            )
+            for q in bank_questions
+        ])
+    if questions:
+        for qi in questions:
+            _validate_question_input(qi)
+        merged.extend(questions)
+    if not merged:
+        raise HTTPException(status_code=400, detail="请从题库选择题目或手动输入题目")
+    return merged
+
+
+@router.get("/question-bank")
+async def list_question_bank(
+    course_id: str | None = None,
+    question_type: str | None = Query(default=None, pattern="^(single_choice|multiple_choice|true_false|blank)$"),
+    keyword: str | None = Query(default=None, max_length=100),
+    limit: int | None = Query(default=None, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_ta),
+) -> list[dict[str, Any]]:
+    """本地测试题库列表（TA 出题视角，含标准答案），可按课程/题型/关键词过滤。"""
+    stmt = select(TaQuestionBank)
+    if course_id:
+        stmt = stmt.where(TaQuestionBank.course_id == _require_uuid(course_id, "课程不存在"))
+    if question_type:
+        stmt = stmt.where(TaQuestionBank.question_type == question_type)
+    if keyword:
+        stmt = stmt.where(TaQuestionBank.prompt.ilike(f"%{keyword}%"))
+    stmt = stmt.order_by(TaQuestionBank.question_type, TaQuestionBank.created_at)
+    stmt = _apply_page(stmt, limit, offset)
+    rows = db.execute(stmt).scalars().all()
+    return [
+        {
+            "id": str(q.id),
+            "course_id": str(q.course_id) if q.course_id else None,
+            "question_type": q.question_type,
+            "prompt": q.prompt,
+            "options": q.options or [],
+            "answer": q.answer,
+            "score": q.score,
+            "source": q.source,
+        }
+        for q in rows
+    ]
+
+
 @router.post("/quizzes")
 async def create_quiz(
     payload: QuizCreateRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_ta),
 ) -> dict[str, Any]:
-    """创建测验 + 嵌套题目；校验班级与题目一致性。"""
+    """创建测验：支持从本地测试题库选题（question_ids）或手动输入题目（questions）。"""
     user_id = _user_internal_id(db, current_user.id)
     if user_id is None:
         raise HTTPException(status_code=403, detail="当前用户不存在")
@@ -114,11 +237,7 @@ async def create_quiz(
     cls = db.get(TaClass, class_id_uuid)
     if not cls:
         raise HTTPException(status_code=404, detail="班级不存在")
-    for qi in payload.questions:
-        if qi.question_type not in {"single_choice", "true_false"}:
-            raise HTTPException(status_code=400, detail=f"不支持的题型: {qi.question_type}")
-        if qi.question_type == "true_false" and qi.answer not in {"T", "F"}:
-            raise HTTPException(status_code=400, detail="判断题答案须为 T 或 F")
+    resolved = _resolve_quiz_questions(db, payload.question_ids, payload.questions)
     quiz = TaQuiz(
         ta_user_id=user_id,
         class_id=class_id_uuid,
@@ -128,7 +247,7 @@ async def create_quiz(
     )
     db.add(quiz)
     db.flush()
-    for idx, qi in enumerate(payload.questions):
+    for idx, qi in enumerate(resolved):
         db.add(TaQuizQuestion(
             quiz_id=quiz.id, order_index=idx, question_type=qi.question_type,
             prompt=qi.prompt, options=qi.options, answer=qi.answer, score=qi.score,
@@ -200,8 +319,8 @@ async def update_quiz(
         quiz.title = payload.title
     if payload.description is not None:
         quiz.description = payload.description
-    if payload.questions is not None:
-        _save_quiz_questions(db, quiz.id, payload.questions)
+    if payload.question_ids is not None or payload.questions is not None:
+        _save_quiz_questions(db, quiz.id, _resolve_quiz_questions(db, payload.question_ids, payload.questions))
     db.commit()
     return _quiz_to_dict(quiz)
 
@@ -257,6 +376,46 @@ async def close_quiz(
     db.commit()
     db.refresh(quiz)
     return _quiz_to_dict(quiz)
+
+
+@router.delete("/quizzes/{quiz_id}")
+async def delete_quiz(
+    quiz_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_ta),
+) -> dict[str, Any]:
+    """删除测验（仅草稿）：级联删除题目与作答记录，已发布/已关闭测验禁止删除。"""
+    quiz_id_uuid = _require_uuid(quiz_id, "测验不存在")
+    quiz = db.get(TaQuiz, quiz_id_uuid)
+    if not quiz:
+        raise HTTPException(status_code=404, detail="测验不存在")
+    if quiz.status != "draft":
+        raise HTTPException(status_code=403, detail="仅草稿测验可删除，已发布或已关闭的测验不能删除")
+    _delete_quiz_record(db, quiz)
+    db.commit()
+    return {"id": str(quiz.id), "message": "测验已删除"}
+
+
+@router.delete("/quizzes")
+async def delete_quizzes(
+    payload: QuizBatchDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_ta),
+) -> dict[str, Any]:
+    """批量删除测验（仅草稿）：跳过非草稿或不存在的 id，返回删除数量。"""
+    deleted = 0
+    skipped: list[str] = []
+    for raw_id in dict.fromkeys(payload.quiz_ids):
+        quiz_id_uuid = _require_uuid(raw_id, "测验不存在")
+        quiz = db.get(TaQuiz, quiz_id_uuid)
+        if not quiz or quiz.status != "draft":
+            skipped.append(raw_id)
+            continue
+        _delete_quiz_record(db, quiz)
+        deleted += 1
+    db.commit()
+    message = f"已删除 {deleted} 个测验" + (f"，跳过 {len(skipped)} 个非草稿或不存在的测验" if skipped else "")
+    return {"deleted": deleted, "skipped": skipped, "message": message}
 
 
 @router.get("/quizzes/{quiz_id}/stats")

@@ -740,9 +740,9 @@ POST   /api/v1/ta-student/notifications/{notification_id}/read
 * 班级列表返回已加入班级的名称、教师姓名、邀请码、班内人数与入班时间。
 * 学生凭 8 位邀请码加入班级；邀请码大小写不敏感，重复加入幂等返回，满员班级拒绝加入。
 * 学生退出班级幂等，教师端可再次通过邀请码或其他方式将学生加入班级。
-* 作业列表返回已发布作业及当前学生的提交状态（`submitted`、`attempt_number`、`submitted_at`）。
-* 作业提交内容为文本作答，支持重复提交，后端记录每次提交的 attempt_number 与提交时间。
-* 测验题目详情接口只返回题干、题型、选项与分值，不返回正确答案；提交后即时判分并返回得分。
+* 作业列表返回已发布作业及当前学生的提交状态（`submitted`、`attempt_number`、`submitted_at`、`score`）与题目数（`question_count`）。
+* 作业提交：多题作业提交逐题作答（`answers`，客观题即时判分），单题作业提交文本（`answer`）；均支持重复提交，后端记录每次提交的 attempt_number 与提交时间。
+* 测验/作业题目详情接口只返回题干、题型、选项与分值，不返回正确答案；客观题提交后即时判分并返回得分，含主观题的多题作业由 AI 批改后返回总分。
 * 通知列表返回 `unread_count` 与逐条已读状态，标记已读幂等。
 
 ## 3. 管理侧 API
@@ -1059,10 +1059,11 @@ POST /api/v1/webhooks/chatdoc/status
 |---|---|---|
 | 工作台 | `GET /ta/dashboard` | 班级、作业、测验、预警与待办聚合统计。 |
 | 班级管理 | `/ta/classes` | 班级增删改、邀请码生成/重置、学生增删、名单读取、成绩 CSV 导出。 |
-| 作业管理 | `/ta/assignments` | 创建、编辑、发布、关闭作业，查看提交列表。 |
-| 批改中心 | `/ta/grading` | 批改列表、手动评分、AI 批改（文本/图片/流式）、批改统计与导出。 |
-| 测验管理 | `/ta/quizzes` | 创建、编辑、发布、关闭测验，查看统计与作答明细。 |
-| 备课助手 | `/ta/lesson-plans` | AI 生成教案（同步/流式）、编辑、发布。 |
+| 作业管理 | `/ta/assignments` | 创建、编辑、发布、关闭课后作业，查看提交列表；支持**多题作业**（从题库选题 `question_ids` / 手动出题 `questions`，题目快照进 `ta_assignment_questions`）与单题旧路径（主观题简答/代码、客观题单选/判断）。 |
+| 批改中心 | `/ta/grading` | 批改列表（默认返回全部状态，可按状态/班级过滤）、手动评分、AI 批改（单条/批量/图片/流式）、批改统计与导出；多题作业客观题自动判分、主观题 AI 综合批改，详情与提交列表返回逐题作答与题目快照（含标准答案）。 |
+| 测验管理 | `/ta/quizzes` | 创建、编辑、发布、关闭、删除（单个/批量）、查看统计与作答明细；创建时支持从本地题库选题（`question_ids`）或手动输入题目（`questions`），两者可混合。 |
+| 本地题库 | `GET /ta/question-bank` | 本地测试题库列表（TA 出题视角含标准答案），支持按课程/题型/关键词过滤；题型为单选/多选/判断/填空四类客观题。 |
+| 备课助手 | `/ta/lesson-plans` | AI 生成教案（同步/流式，结构化 JSON 输出）、编辑、发布、删除（单个/批量）。 |
 | 学情诊断 | `/ta/diagnosis` | 班级对比、学生趋势/雷达、热力图、进度、薄弱点与教学建议。 |
 | 预警管理 | `/ta/alerts` | 预警列表、干预、解决、干预动作与 AI 生成预警。 |
 | 资源审核 | `/ta/resources` | 待审资源列表、通过、驳回。 |
@@ -1071,7 +1072,14 @@ POST /api/v1/webhooks/chatdoc/status
 关键行为：
 
 * 助教创建作业/测验后默认草稿状态，发布后才对学生可见；关闭后学生不可再提交。
-* 手动评分与 AI 批改均写入 `ta_grading_records`；AI 批改失败时返回明确错误，不伪造分数。
+* 智能备课采用**结构化教案契约**：DeepSeek `json_object` 模式输出 `{objectives, key_points, difficulties, process, homework, board}`，后端做字段级防御解析（`objectives` 为必填锚点），解析成功时结构化内容存 `content`（JSONB）、同时渲染 Markdown 存 `outline`（编辑/兼容展示），避免长 Markdown 教案被 `max_tokens` 截断；解析失败降级为占位骨架（`source=fallback`）。AI 生成成功后前端弹出**教案编辑弹窗**，教师可增删改教学重点/目标/难点/过程/作业/板书，保存时整体提交 `content`（`PUT /ta/lesson-plans/{id}`）并同步重渲染 outline；直接编辑大纲文本时结构化内容失效，以编辑文本为准。
+* 测验支持删除：仅草稿可删（`DELETE /ta/quizzes/{quiz_id}` 单个、`DELETE /ta/quizzes` 批量，批量返回删除数与跳过的 id），删除时级联清理题目与作答记录；已发布/已关闭的测验禁止删除，避免破坏学生作答数据。
+* 布置测验/作业时支持从本地测试题库（`ta_question_bank`，种子含深度学习课程单选 10 题、多选 5 题、判断 6 题、填空 5 题，共 26 题）按四类题型筛选勾选题目，后端把选中题目快照复制进 `ta_quiz_questions` / `ta_assignment_questions`，保证学生作答与判分链路不变；题库本身不直接暴露给学生端。
+* 手动评分与 AI 批改均写入 `ta_grading_records`；AI 批改失败时返回明确错误，不伪造分数。支持**批量 AI 批改**（`POST /ta/grading/ai-grade/batch`，最多 100 条，单条失败不影响其余，返回成功/失败统计）。
+* 课后作业支持两种形态：
+  * **多题作业**（`question_type=multi`）：从题库选题或手动出题组成多题快照，满分按题目分值自动求和；题型为四类客观题（单选 `single_choice`、多选 `multiple_choice`、判断 `true_false`、填空 `blank`）与主观题（简答 `short_answer`、代码 `code`）。学生逐题作答（`POST /ta-student/assignments/{id}/submit` 携带 `answers`），客观题提交后自动判分（多选按选项集合比较、填空忽略大小写），含主观题时客观分记入批改记录 `objective_score`，主观题由 AI 综合批改后汇总总分。
+  * **单题旧路径**：主观题（`short_answer`/`code`，学生提交文本作答）与客观题（`single_choice`/`true_false`，学生按选项作答）；客观题必须提供选项与标准答案（`options`/`correct_answer`），学生提交后批改记录携带标准答案（`reference_answer`），AI 批改时按标准答案严格核分。
+  * 学生端题目详情（`GET /ta-student/assignments/{id}/questions`）与测验一致，不返回标准答案。
 * 干预预警会向学生生成站内通知，学生可在 `/notifications` 查看并标记已读。
 * 班级成绩导出为 CSV（UTF-8 BOM），可直接用 Excel 打开。
 * 创建班级时服务端生成 8 位唯一邀请码（字符集剔除易混淆字符）；`POST /ta/classes/{class_id}/regenerate-code` 重置后旧码立即失效。

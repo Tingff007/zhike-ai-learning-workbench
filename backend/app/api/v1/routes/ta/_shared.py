@@ -29,10 +29,11 @@ from app.models.ta_class_student import TaClassStudent
 from app.models.ta_lesson_plan import TaLessonPlan
 from app.models.ta_grading_record import TaGradingRecord
 from app.models.ta_alert_record import TaAlertRecord
-from app.models.ta_assignment import TaAssignment, TaSubmission
+from app.models.ta_assignment import TaAssignment, TaAssignmentQuestion, TaSubmission
 from app.models.ta_alert_action import TaAlertAction
 from app.models.ta_notification import TaNotification
 from app.models.ta_quiz import TaQuiz, TaQuizQuestion, TaQuizAttempt
+from app.models.ta_question_bank import TaQuestionBank
 from app.models.resource import Resource
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,12 @@ _VALID_LATE_POLICIES = ("reject", "allow_penalty", "allow")
 
 _ALERT_RATE_WINDOW_SECONDS = 3600
 _ALERT_RATE_MAX_COUNT = 1
+
+# 四类客观题型：题库/测验/作业多题均按此集合自动判分
+_OBJECTIVE_QUESTION_TYPES = {"single_choice", "multiple_choice", "true_false", "blank"}
+
+# 全部题型：客观四类 + 主观两类（简答/代码，走 AI 批改）
+_ALL_QUESTION_TYPES = _OBJECTIVE_QUESTION_TYPES | {"short_answer", "code"}
 
 
 def _user_internal_id(db: Session, user_id_ref: str) -> uuid.UUID | None:
@@ -217,19 +224,35 @@ def _create_notifications(
     return len(student_ids)
 
 
+def _normalize_choice_answer(value: str) -> str:
+    """把多选作答规范化为有序大写字母串（如 'B,A' → 'AB'），用于等价比较判分。"""
+    return "".join(sorted(ch for ch in str(value).upper() if ch.isalpha()))
+
+
 def _grade_quiz_attempt(
     answers: dict[str, str],
     questions: list[Any],
 ) -> tuple[float, dict[str, Any]]:
     """客观题逐题判分：返回 (总分, 每题明细 {question_id: {correct, score}})。
 
-    未作答/答错该题 0 分；questions 元素需提供 id/answer/score。
+    支持四类客观题型：单选/判断精确比较，多选按选项集合规范化比较，
+    填空忽略首尾空格与大小写比较；未作答或答错该题 0 分。
+    questions 元素需提供 id/answer/score，question_type 缺省按单选处理。
     """
     total = 0.0
     details: dict[str, Any] = {}
     for q in questions:
         qid = str(q.id)
-        correct = answers.get(qid) == q.answer
+        student = answers.get(qid)
+        qtype = getattr(q, "question_type", None) or "single_choice"
+        if student is None or str(student).strip() == "":
+            correct = False
+        elif qtype == "multiple_choice":
+            correct = _normalize_choice_answer(student) == _normalize_choice_answer(q.answer or "")
+        elif qtype == "blank":
+            correct = str(student).strip().lower() == str(q.answer or "").strip().lower()
+        else:
+            correct = student == q.answer
         s = float(q.score) if correct else 0.0
         total += s
         details[qid] = {"correct": correct, "score": s}

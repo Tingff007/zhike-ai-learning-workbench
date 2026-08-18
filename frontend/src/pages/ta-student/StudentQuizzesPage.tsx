@@ -12,9 +12,16 @@ type QuizDetail = { id: string; title: string; description: string | null; quest
 
 const primaryButtonClass = 'inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 disabled:opacity-50';
 const secondaryButtonClass = 'inline-flex items-center gap-1.5 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50';
+const inputClass = 'w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none transition-colors focus:border-zinc-500';
+
+/** 判断某题是否已有作答（多选按选中集合判断） */
+function isAnswered(question: QuizQuestion, answer: string | undefined): boolean {
+  if (question.question_type === 'multiple_choice') return Boolean(answer && answer.length > 0);
+  return Boolean(answer && answer.trim().length > 0);
+}
 
 /**
- * 学生端随堂测验：在线作答客观题并即时查看得分。
+ * 学生端随堂测验：在线作答客观题（单选/多选/判断/填空）并即时查看得分。
  */
 export function StudentQuizzesPage(): JSX.Element {
   const queryClient = useQueryClient();
@@ -41,6 +48,18 @@ export function StudentQuizzesPage(): JSX.Element {
   });
 
   const detail: QuizDetail | undefined = detailQuery.data;
+  const allAnswered = (detail?.questions ?? []).every((q) => isAnswered(q, answers[q.id]));
+
+  /** 更新单题作答（多选按字母集合存储，如 "A,C"） */
+  function updateAnswer(questionId: string, value: string): void {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  }
+
+  function toggleMultiChoice(questionId: string, letter: string): void {
+    const current = (answers[questionId] ?? '').split(',').filter(Boolean);
+    const next = current.includes(letter) ? current.filter((it) => it !== letter) : [...current, letter];
+    updateAnswer(questionId, next.sort().join(','));
+  }
 
   return (
     <OverlayPageShell title="随堂测验" subtitle="完成助教发布的随堂测验，客观题提交后即时判分。" pageClassName="student-quizzes-page">
@@ -106,22 +125,35 @@ export function StudentQuizzesPage(): JSX.Element {
                     {index + 1}. {question.prompt} <span className="ml-1 text-xs font-normal text-zinc-400">（{question.score} 分）</span>
                   </div>
                   <div className="mt-3 space-y-2">
-                    {(question.options ?? []).map((option, optionIndex) => {
-                      const letter = String.fromCharCode(65 + optionIndex);
-                      return (
-                        <label key={`${question.id}-${optionIndex}`} className="flex cursor-pointer items-center gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-50">
-                          <input
-                            type="radio"
-                            name={question.id}
-                            value={letter}
-                            checked={answers[question.id] === letter}
-                            onChange={() => setAnswers({ ...answers, [question.id]: letter })}
-                          />
-                          <span className="font-medium text-zinc-400">{letter}.</span>
-                          {option}
-                        </label>
-                      );
-                    })}
+                    {question.question_type === 'blank' ? (
+                      <input
+                        className={inputClass}
+                        placeholder="填写答案"
+                        value={answers[question.id] ?? ''}
+                        onChange={(e) => updateAnswer(question.id, e.target.value)}
+                      />
+                    ) : (
+                      (question.options ?? []).map((option, optionIndex) => {
+                        const letter = String.fromCharCode(65 + optionIndex);
+                        const isMulti = question.question_type === 'multiple_choice';
+                        const selected = isMulti
+                          ? (answers[question.id] ?? '').split(',').filter(Boolean).includes(letter)
+                          : answers[question.id] === letter;
+                        return (
+                          <label key={`${question.id}-${optionIndex}`} className="flex cursor-pointer items-center gap-2 rounded-md border border-zinc-100 px-3 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-50">
+                            <input
+                              type={isMulti ? 'checkbox' : 'radio'}
+                              name={isMulti ? undefined : question.id}
+                              value={letter}
+                              checked={selected}
+                              onChange={() => (isMulti ? toggleMultiChoice(question.id, letter) : updateAnswer(question.id, letter))}
+                            />
+                            <span className="font-medium text-zinc-400">{letter}.</span>
+                            {option}
+                          </label>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               ))}
@@ -131,7 +163,7 @@ export function StudentQuizzesPage(): JSX.Element {
                 <button
                   type="button"
                   className={primaryButtonClass}
-                  disabled={submitMutation.isPending || Object.keys(answers).length !== (detail?.questions.length ?? 0)}
+                  disabled={submitMutation.isPending || !allAnswered}
                   onClick={() => submitMutation.mutate()}
                 >
                   {submitMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />} 提交测验

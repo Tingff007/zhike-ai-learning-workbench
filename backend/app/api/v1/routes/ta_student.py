@@ -10,17 +10,18 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.routes.ta._shared import (
+    _OBJECTIVE_QUESTION_TYPES,
     _compute_is_late,
     _grade_quiz_attempt,
     _require_uuid,
     _resolve_submission_delta,
 )
 from app.core.deps import get_current_user, get_db
-from app.models.ta_assignment import TaAssignment, TaSubmission
+from app.models.ta_assignment import TaAssignment, TaAssignmentQuestion, TaSubmission
 from app.models.ta_class import TaClass
 from app.models.ta_class_student import TaClassStudent
 from app.models.ta_grading_record import TaGradingRecord
@@ -63,8 +64,9 @@ def _build_notification_dict(n: TaNotification) -> dict[str, Any]:
 
 
 class SubmissionRequest(BaseModel):
-    """提交作业请求体。"""
-    answer: str = Field(min_length=1)
+    """提交作业请求体：单题提交 answer 文本；多题提交 answers {question_id: 作答}。"""
+    answer: str | None = None
+    answers: dict[str, str] | None = None
 
 
 class QuizSubmitRequest(BaseModel):
@@ -99,12 +101,31 @@ async def list_assignments(
         )
     ).scalars().all()
     submission_by_assignment = {row.assignment_id: row for row in submission_rows}
+    # 批量统计多题作业的题目数
+    assignment_ids = [a.id for a in assignments]
+    question_counts: dict[Any, int] = {}
+    if assignment_ids:
+        rows = db.execute(
+            select(TaAssignmentQuestion.assignment_id, func.count(TaAssignmentQuestion.id))
+            .where(TaAssignmentQuestion.assignment_id.in_(assignment_ids))
+            .group_by(TaAssignmentQuestion.assignment_id)
+        ).all()
+        question_counts = {assignment_id: count for assignment_id, count in rows}
+    # 已提交作业的得分（多题自动判分 / 单题批改后）
+    grading_ids = [row.grading_record_id for row in submission_rows if row.grading_record_id]
+    grade_by_id: dict[Any, TaGradingRecord] = {}
+    if grading_ids:
+        grade_rows = db.execute(select(TaGradingRecord).where(TaGradingRecord.id.in_(grading_ids))).scalars().all()
+        grade_by_id = {g.id: g for g in grade_rows}
     return [
         {
             "id": str(a.id),
             "title": a.title,
             "description": a.description,
+            "question_type": a.question_type,
+            "options": a.options or [],
             "total_score": a.total_score,
+            "question_count": question_counts.get(a.id, 0),
             "due_at": a.due_at.isoformat() if a.due_at else None,
             "late_policy": a.late_policy,
             "late_penalty_ratio": a.late_penalty_ratio,
@@ -112,6 +133,12 @@ async def list_assignments(
             "created_at": a.created_at.isoformat() if a.created_at else None,
             "submitted": a.id in submission_by_assignment,
             "attempt_number": submission_by_assignment[a.id].attempt_number if a.id in submission_by_assignment else 0,
+            "score": (
+                grade_by_id[submission_by_assignment[a.id].grading_record_id].score
+                if a.id in submission_by_assignment and submission_by_assignment[a.id].grading_record_id
+                and grade_by_id.get(submission_by_assignment[a.id].grading_record_id)
+                else None
+            ),
             "submitted_at": (
                 submission_by_assignment[a.id].submitted_at.isoformat()
                 if a.id in submission_by_assignment and submission_by_assignment[a.id].submitted_at
@@ -120,6 +147,53 @@ async def list_assignments(
         }
         for a in assignments
     ]
+
+
+@router.get("/assignments/{assignment_id}/questions")
+async def get_assignment_questions(
+    assignment_id: str,
+    db: Session = Depends(get_db),
+    current_user: Any = Depends(get_current_user),
+) -> dict[str, Any]:
+    """当前学生可见的作业题目详情（不含答案，仅 published 且归属本人班级）。
+
+    单题旧作业返回 questions 为空，由前端按 question_type 渲染原交互；
+    多题作业返回题目快照列表，前端逐题作答。
+    """
+    student_id = _resolve_student(db, current_user)
+    if student_id is None:
+        raise HTTPException(status_code=403, detail="当前账号没有学生权限")
+    assignment_id_uuid = _require_uuid(assignment_id, "作业不存在")
+    assignment = db.get(TaAssignment, assignment_id_uuid)
+    if not assignment or assignment.status != "published":
+        raise HTTPException(status_code=404, detail="作业不存在")
+    class_ids = _student_class_ids(db, student_id)
+    if assignment.class_id not in class_ids:
+        raise HTTPException(status_code=404, detail="作业不存在")
+    questions = db.execute(
+        select(TaAssignmentQuestion).where(TaAssignmentQuestion.assignment_id == assignment.id)
+        .order_by(TaAssignmentQuestion.order_index)
+    ).scalars().all()
+    result = {
+        "id": str(assignment.id),
+        "title": assignment.title,
+        "description": assignment.description,
+        "question_type": assignment.question_type,
+        "options": assignment.options or [],
+        "total_score": assignment.total_score,
+        "due_at": assignment.due_at.isoformat() if assignment.due_at else None,
+        "questions": [
+            {
+                "id": str(q.id),
+                "prompt": q.prompt,
+                "question_type": q.question_type,
+                "options": q.options or [],
+                "score": q.score,
+            }
+            for q in questions
+        ],
+    }
+    return result
 
 
 @router.post("/assignments/{assignment_id}/submit")
@@ -160,6 +234,98 @@ async def submit_assignment(
             TaSubmission.student_id == student_id,
         )
     ).scalar_one_or_none()
+
+    # 多题作业：载入题目快照，客观题自动判分，主观题进入 AI 批改流水线
+    questions = db.execute(
+        select(TaAssignmentQuestion).where(TaAssignmentQuestion.assignment_id == assignment.id)
+        .order_by(TaAssignmentQuestion.order_index)
+    ).scalars().all()
+    if questions:
+        if not payload.answers:
+            raise HTTPException(status_code=400, detail="多题作业请逐题作答后提交")
+        objective_questions = [q for q in questions if q.question_type in _OBJECTIVE_QUESTION_TYPES]
+        subjective_questions = [q for q in questions if q.question_type not in _OBJECTIVE_QUESTION_TYPES]
+        objective_score, _details = _grade_quiz_attempt(payload.answers, objective_questions) if objective_questions else (0.0, {})
+        total_score = sum(q.score for q in questions)
+        answers_json = json.dumps(payload.answers, ensure_ascii=False)
+        has_subjective = bool(subjective_questions)
+        # 客观题作答快照写入 submission（answer 列存 JSON 文本兜底，answers 列存结构化）
+        if existing:
+            existing.answer = answers_json
+            existing.answers = payload.answers
+            existing.submitted_at = now
+            existing.is_late = is_late
+            existing.attempt_number = _resolve_submission_delta(existing.attempt_number)
+            submission = existing
+        else:
+            submission = TaSubmission(
+                assignment_id=assignment.id,
+                student_id=student_id,
+                answer=answers_json,
+                answers=payload.answers,
+                submitted_at=now,
+                is_late=is_late,
+                attempt_number=1,
+            )
+            db.add(submission)
+
+        grading = None
+        if submission.grading_record_id:
+            grading = db.get(TaGradingRecord, submission.grading_record_id)
+        if grading is None:
+            grading = TaGradingRecord(
+                title=assignment.title,
+                student_id=student_id,
+                course_id=assignment.course_id,
+                class_id=assignment.class_id,
+                concept_id=assignment.concept_id,
+                total_score=total_score,
+                student_answer=answers_json,
+                objective_score=objective_score,
+                is_late=is_late,
+                attempt_number=submission.attempt_number,
+                question_type="multi",
+                status="pending" if has_subjective else "graded",
+                grader_type="ai_assisted" if has_subjective else "auto",
+                score=None if has_subjective else objective_score,
+            )
+            db.add(grading)
+            db.flush()
+            submission.grading_record_id = grading.id
+        else:
+            grading.student_answer = answers_json
+            grading.objective_score = objective_score
+            grading.is_late = is_late
+            grading.attempt_number = submission.attempt_number
+            grading.grader_type = "ai_assisted" if has_subjective else "auto"
+            grading.late_penalty = None
+            if has_subjective:
+                grading.status = "pending"
+                grading.score = None
+                grading.ai_comment = None
+                grading.ta_comment = None
+                grading.feedback = None
+            else:
+                grading.status = "graded"
+                grading.score = objective_score
+                grading.ai_comment = None
+                grading.ta_comment = None
+                grading.feedback = None
+        db.commit()
+        return {
+            "id": str(submission.id),
+            "is_late": is_late,
+            "attempt_number": submission.attempt_number,
+            "grading_record_id": str(grading.id),
+            "score": None if has_subjective else objective_score,
+            "total_score": total_score,
+            "has_subjective": has_subjective,
+            "message": "提交成功" + ("，客观题已自动判分" if not has_subjective else "，客观题已判分，主观题待 AI 批改"),
+        }
+
+    # 单题作业旧路径：文本提交，生成 pending 批改记录进入 AI/手动批改流水线
+    if not payload.answer:
+        raise HTTPException(status_code=400, detail="请填写作答内容")
     if existing:
         existing.answer = payload.answer
         existing.submitted_at = now
@@ -189,9 +355,10 @@ async def submit_assignment(
             concept_id=assignment.concept_id,
             total_score=assignment.total_score,
             student_answer=payload.answer,
+            reference_answer=assignment.correct_answer,
             is_late=is_late,
             attempt_number=submission.attempt_number,
-            question_type="short_answer",
+            question_type=assignment.question_type or "short_answer",
             status="pending",
             grader_type="ai_assisted",
         )
@@ -200,6 +367,7 @@ async def submit_assignment(
         submission.grading_record_id = grading.id
     else:
         grading.student_answer = payload.answer
+        grading.reference_answer = assignment.correct_answer
         grading.is_late = is_late
         grading.attempt_number = submission.attempt_number
         grading.status = "pending"

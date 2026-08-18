@@ -1,12 +1,23 @@
 from functools import cached_property
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 MIN_PRODUCTION_SECRET_LENGTH = 32
+
+
+def load_project_env() -> None:
+    """把项目根目录 .env 注入进程环境变量，供 os.getenv 类读取方使用。
+
+    背景：pydantic-settings 只把 .env 的值绑定到 Settings 字段，不会写入 os.environ；
+    而模型网关等模块通过 os.getenv 读取 API Key（如 DEEPSEEK_API_KEY），
+    若不注入会导致运行时判定"缺少 API Key"。默认不覆盖进程已有的同名环境变量。
+    """
+    load_dotenv(PROJECT_ROOT / ".env", override=False)
 
 
 def _secret_weak_reason(value: str, blocked_values: set[str]) -> str | None:
