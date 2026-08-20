@@ -352,6 +352,7 @@ class AgentWorkflow:
         started_at = time.perf_counter()
         payload = state["payload"]
         route_decision: str
+        detail = ""
 
         # 第 1 层：显式 intent_type 覆盖（从前端或编排层传入）
         if payload.intent_type == "RESOURCE_GENERATION":
@@ -404,7 +405,7 @@ class AgentWorkflow:
         return {
             "route_decision": route_decision,
             "intent": route_decision,
-            "trace": self._append_trace(state, "意图路由", "completed", detail, duration_ms=self._elapsed_ms(started_at)),
+            "trace": self._append_trace(state, "意图路由", "completed", detail or route_decision, duration_ms=self._elapsed_ms(started_at)),
         }
 
     @staticmethod
@@ -562,10 +563,12 @@ class AgentWorkflow:
                 profile_context=state.get("profile_context"),
             )
             gateway = ModelGateway(state["db"])
+            user_override = gateway.user_chat_override(state["user_id"])
             result = await gateway.complete_chat(
                 messages=messages,
                 course_slug=None,
                 provider_code=gateway.resolve_course_chat_provider(None),
+                user_override=user_override,
                 agent_name="回答生成",
                 temperature=settings.MODEL_GATEWAY_TEMPERATURE,
                 max_tokens=settings.MODEL_GATEWAY_MAX_TOKENS,
@@ -642,11 +645,13 @@ class AgentWorkflow:
             profile_context=state.get("profile_context"),
         )
         gateway = ModelGateway(state["db"])
+        user_override = gateway.user_chat_override(state["user_id"])
         course_slug = context.course_id or None
         result = await gateway.complete_chat(
             messages=messages,
             course_slug=course_slug,
             provider_code=gateway.resolve_course_chat_provider(course_slug),
+            user_override=user_override,
             agent_name="回答生成",
             temperature=settings.MODEL_GATEWAY_TEMPERATURE,
             max_tokens=settings.MODEL_GATEWAY_MAX_TOKENS,
@@ -1155,11 +1160,13 @@ class AgentWorkflow:
             answer_parts: list[str] = []
             model_done: dict[str, Any] = {}
             gateway = ModelGateway(db)
+            user_override = gateway.user_chat_override(user_id)
             course_slug = state["context"].course_id or None
             async for event in gateway.stream_chat(
                 messages=messages,
                 course_slug=course_slug,
                 provider_code=gateway.resolve_course_chat_provider(course_slug),
+                user_override=user_override,
                 agent_name="回答生成",
                 temperature=settings.MODEL_GATEWAY_TEMPERATURE,
                 max_tokens=settings.MODEL_GATEWAY_MAX_TOKENS,

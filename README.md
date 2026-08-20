@@ -33,6 +33,35 @@
 | [docs/07-api-data-and-acceptance.md](./docs/07-api-data-and-acceptance.md) | API 设计、核心数据模型、验收标准、调用边界速查。 |
 | [docs/08-knowledge-mindmap-skill-design.md](./docs/08-knowledge-mindmap-skill-design.md) | 知识思维导图 Skill 的触发条件、输入输出契约、多智能体流程和质量核验。 |
 | [docs/09-current-function-inventory-and-extension-plan.md](./docs/09-current-function-inventory-and-extension-plan.md) | 当前功能盘点、总体统计、已有基本能力清单和可拓展内容建议。 |
+| [docs/11-feature-screenshots.md](./docs/11-feature-screenshots.md) | 功能界面效果展示，按产品模块汇总核心界面截图。 |
+| [docs/15-computer-ai-curriculum.md](./docs/15-computer-ai-curriculum.md) | 计算机与人工智能课程体系规划、GitHub 学习资料目录与智课承载映射。 |
+| [docs/16-knowledge-base-completion-plan.md](./docs/16-knowledge-base-completion-plan.md) | 本地知识库补全实施记录、语料导入、知识点映射与验证结果。 |
+| [docs/17-github-upload-and-reproduction.md](./docs/17-github-upload-and-reproduction.md) | GitHub 上传范围、不上传清单、其他开发者复刻与验证指南。 |
+
+---
+
+## 效果预览
+
+核心功能界面一览，完整大图见 [docs/11-feature-screenshots.md](./docs/11-feature-screenshots.md)。
+
+| 模块 | 界面 |
+|---|---|
+| 学习入口 | [![Dashboard](screenshots/02-dashboard.jpg)](docs/11-feature-screenshots.md) |
+| 课程上下文 | [![Course Context](screenshots/03-course-context.jpg)](docs/11-feature-screenshots.md) |
+| 快捷生成 | [![Resource Agent](screenshots/04-resource-agent.jpg)](docs/11-feature-screenshots.md) |
+| 伴随式交互 | [![Companion](screenshots/05-companion.jpg)](docs/11-feature-screenshots.md) |
+| 内容生成 | [![ArtifactCanvas](screenshots/06-artifact-canvas.jpg)](docs/11-feature-screenshots.md) |
+| 资源工坊 | [![Resource Workshop](screenshots/07-resource-workshop.jpg)](docs/11-feature-screenshots.md) |
+| 资源沉淀 | [![Resource Hall](screenshots/08-resource-hall.jpg)](docs/11-feature-screenshots.md) |
+| 学习路径 | [![Learning Path](screenshots/09-learning-path.jpg)](docs/11-feature-screenshots.md) |
+| 学情画像 | [![Learning Profile](screenshots/10-learning-profile.jpg)](docs/11-feature-screenshots.md) |
+| 个人治理 | [![Settings](screenshots/11-settings.jpg)](docs/11-feature-screenshots.md) |
+| 伙伴配置 | [![Companion Gallery](screenshots/12-companion-gallery.jpg)](docs/11-feature-screenshots.md) |
+| 知识治理 | [![Knowledge Base](screenshots/13-knowledge-base.jpg)](docs/11-feature-screenshots.md) |
+| 资源审核 | [![Review](screenshots/14-review.jpg)](docs/11-feature-screenshots.md) |
+| 模型网关 | [![Model Gateway](screenshots/15-model-gateway.jpg)](docs/11-feature-screenshots.md) |
+| 调用观测 | [![Gateway Ops](screenshots/16-gateway-ops.jpg)](docs/11-feature-screenshots.md) |
+| 运维监控 | [![Operations](screenshots/17-operations.jpg)](docs/11-feature-screenshots.md) |
 
 ---
 
@@ -178,6 +207,18 @@ corepack pnpm dev
 
 前端运行在 `http://localhost:5173`，API 请求通过 Vite 代理到 `localhost:8001`。
 
+**步骤 5：启动代码沙箱微服务（在线编程实验需要）**
+
+```bash
+cd backend/sandbox-service
+npm install         # 首次安装 Pyodide + Express，Pyodide 体积较大，耗时较长
+npm start           # 默认监听 http://127.0.0.1:8003
+```
+
+后端通过 `SANDBOX_SERVICE_URL=http://127.0.0.1:8003` 转发用户代码。访问 `http://127.0.0.1:8003/health` 返回 `{"status":"ready"}` 表示沙箱就绪。
+
+> 也可以直接运行根目录的 `scripts/start-dev.ps1`（或 `start-dev.bat`），脚本会自动拉起后端、前端和代码沙箱。
+
 **停止：**
 
 ```bash
@@ -198,6 +239,7 @@ docker compose up -d
 |---|---|---|
 | 前端 | `5173` | Vite 开发服务器 |
 | 后端 | `8001` | FastAPI + 自动 migration |
+| 代码沙箱 | `8003` | Node + Pyodide 执行用户代码 |
 | PostgreSQL | `5432` | 带 pgvector 扩展 |
 | Valkey | `6379` | Redis 兼容缓存 |
 
@@ -222,6 +264,7 @@ docker compose restart backend     # 重启后端
 |---|---|---|
 | 前端 | `5173` | http://localhost:5173 |
 | 后端 API | `8001` | http://localhost:8001 |
+| 代码沙箱 | `8003` | http://127.0.0.1:8003/health |
 | API 文档 | `8001` | http://localhost:8001/docs |
 | 健康检查 | `8001` | http://localhost:8001/health |
 | PostgreSQL | `5432` | localhost:5432 |
@@ -381,6 +424,7 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 | `/dashboard` | AI 学习工作台 | 默认入口，承载普通 Chat、课程资料问答、资源生成、任务卡片和资源画布。 |
 | `/learning-path` | 学习路径 | 课程内章节路径、节点掌握度、下一步建议和学习行动。 |
 | `/calendar` | 学习日历 | 按日期聚合并保存学习节点、复盘、小测、课程资源和公告提醒，支持完成状态。 |
+| `/curriculum` | 课程体系 | 计算机与人工智能分阶段课程地图、GitHub 开源资料目录、智课模块映射与学习闭环。 |
 | `/announcements` | 公告中心 | 查看系统通知、维护公告、规则变更和功能更新，支持已读、关闭和详情阅读。 |
 | `/resource-hall` | 资源大厅 | 基于后端真实聚合接口展示课程、通用、个人、社区、精选和推荐资源，并展示推荐证据。 |
 | `/learning-profile` | 学情画像 | 全局画像、课程画像、会话画像和多课程对比。 |
@@ -613,7 +657,7 @@ http://localhost:5173/dashboard?mock=1
 ## 11. 验收速查
 
 1. `/dashboard` 默认输入必须调用 ChatProvider，不得默认调用文档问答 API。
-2. 只有用户显式选择“课程资料问答”时，才调用 CloudRagProvider。
+2. 只有用户显式选择“课程资料问答”时，才调用 CloudRagProvider 或本地 PGVector 检索。
 3. 资源生成必须通过 ResourceAgent + ChatProvider。
 4. 课程内资源生成默认先尝试检索课程依据；未命中可靠依据时降级为 ChatProvider 直接生成，不能伪造引用。
 5. 无课程状态下普通对话和通用资源生成可用。
@@ -625,28 +669,35 @@ http://localhost:5173/dashboard?mock=1
 
 ## 本地知识库（T-B-07，Plan B）
 
-项目保留原有讯飞 ChatDoc 云端实现，同时新增可配置的本地 `PDF → PyMuPDF → BGE-small-zh-v1.5 → PGVector → 检索` 链路。默认仍使用 ChatDoc，避免影响已有功能；验收本地方案时，将 `.env` 中的 `RAG_BACKEND` 改为 `local_pgvector`。
+项目保留原有讯飞 ChatDoc 云端实现，同时提供可配置的本地 `PDF / Markdown → 分块 → BGE-small-zh-v1.5 → PGVector → BM25 + 向量混合检索` 链路。当前本地演示环境使用 `backend/.env` 中的 `RAG_BACKEND=local_pgvector`；根 `.env.example` 仍保留讯飞 ChatDoc 作为默认模板，两者会按启动目录的配置优先级生效。
 
-本地模型权重不会提交到 Git。首次使用本地后端时，程序会在第一次导入或检索触发模型加载，并把模型缓存到 `LOCAL_EMBEDDING_CACHE_DIR`。Windows 本机可以把该变量设置为 `D:/zhike-models/bge-small-zh-v1.5`，仓库只保存配置和自动初始化逻辑。
+本地 Embedding 模型权重按当前项目要求随仓库提供，位于 `backend/storage/models/models--BAAI--bge-small-zh-v1.5`。首次导入或检索会优先使用该缓存；如果目录缺失或不完整，程序仍会尝试从 Hugging Face 下载补全。
 
 ```text
 RAG_BACKEND=local_pgvector
 LOCAL_EMBEDDING_MODEL=BAAI/bge-small-zh-v1.5
 LOCAL_EMBEDDING_DIMENSION=512
-LOCAL_EMBEDDING_CACHE_DIR=D:/zhike-models/bge-small-zh-v1.5
+# 从 backend 目录运行时指向 backend/storage/models；也可改为其他本地目录
+LOCAL_EMBEDDING_CACHE_DIR=./storage/models
 LOCAL_EMBEDDING_DEVICE=cpu
 ```
 
-安装依赖并完成验收：
+初始化本地语料并完成验收：
 
 ```bash
-pip install -r backend/requirements.txt
-alembic upgrade head
-# 管理端上传 PDF：POST /api/v1/admin/courses/{course_id}/documents
+cd backend
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe scripts\seed_curriculum_catalog.py
+.\.venv\Scripts\python.exe scripts\import_knowledge_corpus.py
+.\.venv\Scripts\python.exe scripts\sync_local_documents_to_concepts.py --rebuild-paths
+# 已就绪课程：GET /api/v1/courses/with-knowledge
+# 学习路径：GET /api/v1/courses/{course_id}/path
 # 知识库检索：GET /api/v1/admin/knowledge/search?course_id=...&q=...
 ```
 
-本地后端只接受能直接提取文本的 PDF；扫描版 PDF 需要先 OCR。切片会保留页码、文档和切片编号，数据库向量列固定为 512 维；切换 Embedding 模型时必须同时检查维度和迁移。
+同步脚本会从 Markdown 相对路径、标题层级和仓库目录结构提取本地学习主题，创建或更新 `CourseConcept` 与 `CourseSection`，把切片关联到 `DocumentChunk.concept_id`，并重建管理员学习路径。脚本使用稳定编码，可重复执行；重复运行不会新增重复知识点。
+
+当前语料覆盖 7 条课程主线，共 1165 份本地文档、24167 个可检索切片。导入脚本默认跳过 `NOASSERTION` 或未声明许可证的仓库；MIT、Apache-2.0 和允许再分发的 CC 许可内容可批量入库。扫描版 PDF 需要先 OCR；切片会保留页码、标题路径、文档和切片编号。数据库向量列固定为 512 维，切换 Embedding 模型时必须同时检查维度和迁移。
 
 ## 12. 助教端演示（TA Portal）
 

@@ -82,6 +82,8 @@ class Settings(BaseSettings):
     CHATDOC_WEBHOOK_PATH: str = "/api/v1/webhooks/chatdoc/status"
     CHATDOC_WEBHOOK_VERIFY_SIGNATURE: bool = False
     MODEL_GATEWAY_BASE_URL: str = "https://api.deepseek.com"
+    # 可选出站代理，例如 http://127.0.0.1:1080；留空时使用系统网络直连。
+    MODEL_GATEWAY_PROXY_URL: str | None = None
     MODEL_GATEWAY_TIMEOUT_SECONDS: float = 60.0
     MODEL_GATEWAY_MAX_TOKENS: int = 1200
     MODEL_GATEWAY_TEMPERATURE: float = 0.2

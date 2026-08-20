@@ -50,7 +50,7 @@ const mockData = {
   summary: '整体学习效果良好，Python 基础和算法思维表现突出，深度学习和机器学习仍有提升空间。建议加强反向传播和模型调参的练习。',
 };
 
-export function LearningAssessmentReportPage() {
+export function LearningAssessmentReportPage(): JSX.Element {
   const [data, setData] = useState<typeof mockData | null>(null);
   const [loading, setLoading] = useState(true);
 
