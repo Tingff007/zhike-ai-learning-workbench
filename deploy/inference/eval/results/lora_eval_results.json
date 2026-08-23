@@ -1,0 +1,199 @@
+{
+  "model": "qwen2.5-7b-lora",
+  "test_time": "2026-08-21 16:47:36",
+  "total_questions": 17,
+  "success_count": 17,
+  "fail_count": 0,
+  "avg_latency_s": 5.67,
+  "avg_total_tokens": 130.2,
+  "avg_speed_tokens_per_s": 15.3,
+  "results": [
+    {
+      "success": true,
+      "answer": "过拟合指模型在训练数据上表现很好，但在测试数据上表现很差。防止过拟合的方法有：增加训练数据量、使用正则化（如权重衰减）、提前停止训练、集成学习等。",
+      "latency_s": 3.36,
+      "prompt_tokens": 40,
+      "completion_tokens": 50,
+      "total_tokens": 90,
+      "question_id": "ml-01",
+      "category": "机器学习",
+      "question": "什么是过拟合？如何防止过拟合？"
+    },
+    {
+      "success": true,
+      "answer": "决策树是基于特征划分的分类方法，通过递归地对训练数据集进行划分来构建树形结构。信息增益是衡量划分质量的指标：给定数据集D和特征A，若按A划分后信息熵减少，则信息增益为正；划分越均匀（熵越大），信息增益越小。选择信息增益最大的特征作为根节点，递归划分直至满足停止条件。",
+      "latency_s": 5.81,
+      "prompt_tokens": 41,
+      "completion_tokens": 92,
+      "total_tokens": 133,
+      "question_id": "ml-02",
+      "category": "机器学习",
+      "question": "请解释决策树的基本原理。什么是信息增益？"
+    },
+    {
+      "success": true,
+      "answer": "SVM 是一种判别式学习方法，核心思想是：在特征空间中寻找一个最优超平面，使两类样本点分别位于超平面两侧，并且间隔最大。当线性可分时，存在无穷多个超平面；当线性不可分时，引入松弛变量和惩罚参数 C，使间隔最大化的同时尽量让误分类点少。核技巧是 SVM 的关键，它允许用非线性映射把输入空间映射到高维特征空间，在该空间中寻找最优超平面，从而实现非线性分类。",
+      "latency_s": 7.46,
+      "prompt_tokens": 45,
+      "completion_tokens": 119,
+      "total_tokens": 164,
+      "question_id": "ml-03",
+      "category": "机器学习",
+      "question": "支持向量机（SVM）的核心思想是什么？什么是核技巧？"
+    },
+    {
+      "success": true,
+      "answer": "集成学习（ensemble learning）指用多个学习器对同一问题进行学习，然后将这些学习器组合起来得到最终结果。Bagging 是集成学习的代表之一，它通过随机采样生成多个训练集，每个训练集上训练一个学习器，最后把所有学习器的预测结果取平均作为最终结果。Boosting 则是另一种集成学习方法，它通过有放回地从训练集中采样生成多个训练集，每个训练集上训练一个学习器，但每次采样的权重不同，且后续学习器会更关注前一个学习器预测错误的样本。",
+      "latency_s": 8.03,
+      "prompt_tokens": 44,
+      "completion_tokens": 129,
+      "total_tokens": 173,
+      "question_id": "ml-04",
+      "category": "机器学习",
+      "question": "请解释什么是集成学习，Boosting 和 Bagging 有什么区别？"
+    },
+    {
+      "success": true,
+      "answer": "统计学习的三要素是：模型（model）、策略（strategy）和算法（algorithm）。模型是描述输入与输出关系的数学表达式，如线性回归、逻辑回归等；策略是关于如何用模型做决策的规则，如分类时选概率最大的类别；算法是实现模型训练和预测的具体步骤。例如线性回归模型+最大似然策略+梯度下降算法。",
+      "latency_s": 5.35,
+      "prompt_tokens": 45,
+      "completion_tokens": 87,
+      "total_tokens": 132,
+      "question_id": "sl-01",
+      "category": "统计学习",
+      "question": "什么是统计学习的三要素？请解释模型、策略和算法的关系。"
+    },
+    {
+      "success": true,
+      "answer": "朴素贝叶斯分类器是基于贝叶斯定理的简单概率模型，用于解决分类问题。它假设特征之间相互独立（即“朴素”假设），从而可把联合概率分解为条件概率的乘积。例如对二分类问题，给定输入向量 x=(x1,…,xd)，其类标记 y 的后验概率 p(y|x) 可用贝叶斯定理计算：p(y|x)=p(x|y)p(y)/p(x)。其中 p(x|y) 是条件概率，p(y) 是先验概率，p(x) 是归一化常数。",
+      "latency_s": 8.32,
+      "prompt_tokens": 44,
+      "completion_tokens": 134,
+      "total_tokens": 178,
+      "question_id": "sl-02",
+      "category": "统计学习",
+      "question": "请解释朴素贝叶斯分类器的基本原理。什么是朴素假设？"
+    },
+    {
+      "success": true,
+      "answer": "EM（Expectation-Maximization）算法是为含有隐变量的模型做极大似然估计而设计的。它交替进行两步：E 步计算隐变量后验，M 步用隐变量后验对参数做极大化。",
+      "latency_s": 3.89,
+      "prompt_tokens": 42,
+      "completion_tokens": 55,
+      "total_tokens": 97,
+      "question_id": "sl-03",
+      "category": "统计学习",
+      "question": "什么是 EM 算法？它主要解决什么问题？"
+    },
+    {
+      "success": true,
+      "answer": "反向传播算法是用于计算神经网络误差函数梯度的高效算法，由Fahlman和LeCun提出。它通过从输出层开始，沿前馈方向计算各隐藏单元的净输入与激活值，再沿反馈方向计算误差信号并更新权重。其核心思想是：先算出每个单元的误差信号，再用这些误差信号来更新权重。",
+      "latency_s": 5.99,
+      "prompt_tokens": 41,
+      "completion_tokens": 84,
+      "total_tokens": 125,
+      "question_id": "dl-01",
+      "category": "深度学习",
+      "question": "什么是反向传播算法？请解释它的计算过程。"
+    },
+    {
+      "success": true,
+      "answer": "梯度消失：若某层激活值很小（如 tanh 输出接近 0），其梯度也接近 0，反向传播时梯度会逐层衰减，导致深层网络难以训练。梯度爆炸：若某层激活值很大（如 ReLU 输出接近 1），其梯度也接近 1，反向传播时梯度会逐层放大，导致深层网络难以训练。解决方法是使用合适的激活函数（如 ReLU、Leaky ReLU、GELU）和初始化方法（如 Xavier、He）。",
+      "latency_s": 7.63,
+      "prompt_tokens": 43,
+      "completion_tokens": 120,
+      "total_tokens": 163,
+      "question_id": "dl-02",
+      "category": "深度学习",
+      "question": "请解释梯度消失和梯度爆炸问题。如何解决？"
+    },
+    {
+      "success": true,
+      "answer": "批归一化是2015年由Ioffe和Szegedy提出，用于解决深度网络训练中梯度消失/爆炸、激活分布漂移等问题。它在每个样本的特征维度上对当前batch的样本做标准化处理，使激活分布稳定，从而加快训练速度、提高模型性能。",
+      "latency_s": 4.93,
+      "prompt_tokens": 45,
+      "completion_tokens": 70,
+      "total_tokens": 115,
+      "question_id": "dl-03",
+      "category": "深度学习",
+      "question": "什么是批归一化（Batch Normalization）？它解决了什么问题？"
+    },
+    {
+      "success": true,
+      "answer": "SGD 只用当前梯度更新参数，可能不稳定、易震荡；Adam 维护一阶矩 m_t（均值）和二阶矩 v_t（方差），用它们估计梯度方向和尺度，使更新更平滑稳定。AdamW 是 Adam 的变体，把权重衰减直接加到参数上，避免了 SGD 那种把权重衰减看作惩罚项的处理方式。",
+      "latency_s": 6.14,
+      "prompt_tokens": 39,
+      "completion_tokens": 94,
+      "total_tokens": 133,
+      "question_id": "dl-04",
+      "category": "深度学习",
+      "question": "请比较 Adam 和 SGD 优化器的区别。"
+    },
+    {
+      "success": true,
+      "answer": "Dataset 是数据集的抽象接口，定义了如何获取单个样本和样本总数；DataLoader 则负责从 Dataset 中按 batch 取样、打乱、并行加载等。两者结合让训练代码更清晰：dataset 负责数据，dataloader 负责组织和加载。",
+      "latency_s": 4.27,
+      "prompt_tokens": 40,
+      "completion_tokens": 67,
+      "total_tokens": 107,
+      "question_id": "pyt-01",
+      "category": "PyTorch实践",
+      "question": "PyTorch 中 Dataset 和 DataLoader 的作用是什么？"
+    },
+    {
+      "success": true,
+      "answer": "autograd 是 PyTorch 的核心模块，负责自动计算梯度。它通过记录操作创建计算图（tape），并根据反向传播算法自动求导。简单说：只要把张量设成 requires_grad=True，就能自动追踪计算过程并算出梯度。",
+      "latency_s": 3.88,
+      "prompt_tokens": 43,
+      "completion_tokens": 61,
+      "total_tokens": 104,
+      "question_id": "pyt-02",
+      "category": "PyTorch实践",
+      "question": "什么是 autograd？PyTorch 中如何实现自动微分？"
+    },
+    {
+      "success": true,
+      "answer": "model.train() 把模型设为训练模式，启用 dropout、batch normalization 等训练行为；model.eval() 把模型设为评估模式，关闭这些行为。两者主要影响的是 batch normalization 的运行方式和 dropout 的行为。",
+      "latency_s": 3.84,
+      "prompt_tokens": 46,
+      "completion_tokens": 52,
+      "total_tokens": 98,
+      "question_id": "pyt-03",
+      "category": "PyTorch实践",
+      "question": "在 PyTorch 中，model.train() 和 model.eval() 有什么区别？"
+    },
+    {
+      "success": true,
+      "answer": "贝叶斯决策理论是基于贝叶斯定理的决策方法，它把决策问题与概率论结合，用概率来描述不确定性。基本思想是：在给定观测数据后，对模型参数进行后验估计（即后验分布），然后根据后验分布计算预测值或决策结果。",
+      "latency_s": 4.41,
+      "prompt_tokens": 39,
+      "completion_tokens": 68,
+      "total_tokens": 107,
+      "question_id": "prml-01",
+      "category": "模式识别",
+      "question": "请解释贝叶斯决策理论的基本思想。"
+    },
+    {
+      "success": true,
+      "answer": "维数灾难指随着数据维度增加，样本数量需要呈指数增长才能保持相同泛化能力。高维空间中，大部分样本会聚集在边缘，导致距离度量失效；且样本稀疏性加剧，使基于距离的算法（如最近邻）性能下降。因此高维空间是机器学习的挑战之一。",
+      "latency_s": 4.71,
+      "prompt_tokens": 47,
+      "completion_tokens": 72,
+      "total_tokens": 119,
+      "question_id": "prml-02",
+      "category": "模式识别",
+      "question": "什么是维数灾难（Curse of Dimensionality）？它如何影响机器学习？"
+    },
+    {
+      "success": true,
+      "answer": "PCA 是一种降维方法，用于把高维数据投影到低维空间，同时保留尽可能多的信息。它通过求解协方差矩阵的特征值分解来实现：对数据集 X 做中心化后，计算协方差矩阵 Σ = (1/N)XᵀX；对 Σ 求特征值 λ_i 和特征向量 v_i，按 λ_i 降序排列；取前 k 个最大特征值对应的特征向量组成矩阵 V_k，再用 XV_k 得到低维表示。PCA 在图像处理、人脸识别、数据压缩等领域广泛应用。",
+      "latency_s": 8.4,
+      "prompt_tokens": 42,
+      "completion_tokens": 133,
+      "total_tokens": 175,
+      "question_id": "prml-03",
+      "category": "模式识别",
+      "question": "请解释主成分分析（PCA）的原理和应用。"
+    }
+  ]
+}
