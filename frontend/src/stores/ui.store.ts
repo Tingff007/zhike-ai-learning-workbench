@@ -35,7 +35,9 @@ export type CanvasType =
   | 'assignments'
   | 'quizzes'
   | 'notifications'
-  | 'history';
+  | 'history'
+  | 'sandbox'
+  | 'curriculum';
 
 export type ArtifactWorkspaceMeta = {
   title: string;

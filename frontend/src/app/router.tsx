@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("../pages/dashboard/DashboardPage").then
 const AiStudyRoomPage = lazy(() => import("../pages/ai-room/AiStudyRoomPage").then((module) => ({ default: module.AiStudyRoomPage })));
 const LearningPathPage = lazy(() => import("../pages/learning-path/LearningPathPage").then((module) => ({ default: module.LearningPathPage })));
 const LearningCalendarPage = lazy(() => import("../pages/calendar/LearningCalendarPage").then((module) => ({ default: module.LearningCalendarPage })));
+const CurriculumPage = lazy(() => import("../pages/curriculum/CurriculumPage").then((module) => ({ default: module.CurriculumPage })));
 const ResourceWorkshopPage = lazy(() => import("../pages/resource-workshop/ResourceWorkshopPage").then((module) => ({ default: module.ResourceWorkshopPage })));
 const LearningBehaviorPage = lazy(() => import("../pages/learning-behavior/LearningBehaviorPage").then((m) => ({ default: m.LearningBehaviorPage })));
 const AssessmentPage = lazy(() => import("../pages/assessment/AssessmentPage").then((module) => ({ default: module.AssessmentPage })));
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: "ai-room", element: withSuspense(<AiStudyRoomPage />) },
           { path: "learning-path", element: withSuspense(<LearningPathPage />) },
           { path: "calendar", element: withSuspense(<LearningCalendarPage />) },
+          { path: "curriculum", element: withSuspense(<CurriculumPage />) },
           { path: "resource-workshop", element: withSuspense(<ResourceWorkshopPage />) },
           { path: "sandbox", element: withSuspense(<SandboxPage />) },
           { path: 'learning-assessment/report', element: withSuspense(<LearningAssessmentReportPage />) },

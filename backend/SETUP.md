@@ -74,6 +74,8 @@ python run_dev.py
 
 默认连 `redis://localhost:6379/0`。Docker 会自动起一个 Valkey；本地启动的话自己装一个 Redis 或 Valkey 跑着就行。
 
+本地没有 Redis 时，也可以把 `VALKEY_URL` 留空并保持 `RESOURCE_GENERATION_WORKER_ENABLED=true`：资源生成会改由数据库兜底认领任务，进度推送会退回数据库轮询。该模式适合单机开发演示，不适合多进程生产部署。
+
 ---
 
 ## 5. 常见报错对照表
@@ -98,6 +100,27 @@ VALKEY_URL=redis://localhost:6379/0
 ```
 
 Docker 模式下 `docker-compose.yml` 会把 host 改成容器名（`postgres` / `valkey`），不用管。
+
+模型网关默认直连供应商。若本机需要代理才能访问外部模型接口，可在 `.env` 中配置：
+
+```
+MODEL_GATEWAY_PROXY_URL=http://127.0.0.1:1080
+```
+
+该代理会自动作用于模型网关的 Chat、Embedding、Rerank、Vision 和图片生成请求；本机 `localhost` / `127.0.0.1` 供应商不会被代理，便于继续使用 Ollama 等本地服务。
+
+### 6.1 本地知识库语料
+
+本地演示使用 `RAG_BACKEND=local_pgvector`，不依赖讯飞 ChatDoc 凭据。先同步课程体系，再从 manifest 批量导入已抓取的 Markdown：
+
+```bash
+cd backend
+$env:PYTHONPATH="."
+.\.venv\Scripts\python.exe scripts\seed_curriculum_catalog.py
+.\.venv\Scripts\python.exe scripts\import_knowledge_corpus.py
+```
+
+首次导入会加载 `BAAI/bge-small-zh-v1.5` 并写入 `LOCAL_EMBEDDING_CACHE_DIR`。脚本支持 `--dry-run`、`--tracks`、`--repos`、`--limit` 和 `--offset`；默认跳过 `NOASSERTION` 或未声明许可证内容。
 
 ---
 

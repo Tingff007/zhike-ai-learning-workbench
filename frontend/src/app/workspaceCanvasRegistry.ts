@@ -2,10 +2,12 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   BellRing,
+  BookOpen,
   Brain,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Code2,
   Cpu,
   HelpCircle,
   History,
@@ -59,6 +61,8 @@ export const canvasMeta: Record<CanvasType, CanvasMeta> = {
   notifications: { title: '消息通知', subtitle: '助教提醒与作业测验通知收件箱', signal: 'Inbox', Icon: BellRing },
   classes: { title: '我的班级', subtitle: '凭邀请码入班，查看班级信息与师生名单', signal: 'Class', Icon: School },
   history: { title: '会话历史', subtitle: '按课程隔离的历史对话轴', signal: 'History', Icon: History },
+  sandbox: { title: '在线编程实验', subtitle: '编写、运行和测试代码，AI 助手解答问题', signal: 'Sandbox', Icon: Code2 },
+  curriculum: { title: '课程体系', subtitle: '计算机与人工智能课程地图与开源资料目录', signal: 'Curriculum', Icon: BookOpen },
 };
 
 export const routeCanvasRules: RouteCanvasRule[] = [
@@ -81,6 +85,8 @@ export const routeCanvasRules: RouteCanvasRule[] = [
   { test: (pathname) => pathname.startsWith('/quizzes'), canvas: 'quizzes', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/notifications'), canvas: 'notifications', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/personal-settings'), canvas: 'settings', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/sandbox') || pathname.startsWith('/dev/code-sandbox'), canvas: 'sandbox', role: 'student', mode: 'overlay' },
+  { test: (pathname) => pathname.startsWith('/curriculum'), canvas: 'curriculum', role: 'student', mode: 'overlay' },
   { test: (pathname) => pathname.startsWith('/ai-room'), canvas: 'chat', role: 'student', mode: 'standalone' },
   { test: (pathname) => pathname.startsWith('/dashboard'), canvas: 'dashboard', role: 'student', mode: 'standalone' },
 ];
@@ -96,6 +102,7 @@ export const brokenWindowCanvasTypes = new Set<CanvasType>([
   'assignments',
   'quizzes',
   'notifications',
+  'curriculum',
 ]);
 
 /** 判断当前画布是否属于五个破窗 overlay 页面。 */
@@ -122,6 +129,8 @@ const studentRoutePrefixes = [
   '/quizzes',
   '/notifications',
   '/personal-settings',
+  '/sandbox',
+  '/curriculum',
 ] as const;
 
 /** 按当前路径解析工作台画布类型、角色和展示模式。 */

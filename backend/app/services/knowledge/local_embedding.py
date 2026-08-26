@@ -25,8 +25,14 @@ class LocalEmbeddingService:
             raise LocalEmbeddingError("本地知识库需要安装 sentence-transformers；当前仅云端 ChatDoc 配置可直接运行。") from exc
         cache_dir = Path(settings.LOCAL_EMBEDDING_CACHE_DIR).expanduser()
         cache_dir.mkdir(parents=True, exist_ok=True)
+        has_cached_weights = any(cache_dir.rglob("*.safetensors"))
         try:
-            return SentenceTransformer(settings.LOCAL_EMBEDDING_MODEL, cache_folder=str(cache_dir), device=settings.LOCAL_EMBEDDING_DEVICE)
+            return SentenceTransformer(
+                settings.LOCAL_EMBEDDING_MODEL,
+                cache_folder=str(cache_dir),
+                device=settings.LOCAL_EMBEDDING_DEVICE,
+                local_files_only=has_cached_weights,
+            )
         except Exception as exc:
             raise LocalEmbeddingError(f"无法加载本地 Embedding 模型 {settings.LOCAL_EMBEDDING_MODEL}，请检查网络、模型缓存目录和磁盘空间：{exc}") from exc
 

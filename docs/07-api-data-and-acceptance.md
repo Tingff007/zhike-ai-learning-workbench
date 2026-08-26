@@ -36,6 +36,7 @@ PATCH /api/v1/auth/me
 POST  /api/v1/auth/logout
 GET   /api/v1/me/courses
 GET   /api/v1/courses
+GET   /api/v1/courses/with-knowledge
 GET   /api/v1/courses/{course_id}
 GET   /api/v1/me/current-course
 PUT   /api/v1/me/current-course
@@ -51,6 +52,7 @@ GET   /api/v1/courses/{course_id}/concepts
 * WebSocket 连接不应把 token 放入 URL 查询参数；客户端应在收到 `auth_required` 后发送 `auth` 帧完成鉴权。
 * 生产环境建议继续升级为 `HttpOnly + Secure + SameSite` Cookie 或短期 WebSocket 票据，避免长期 bearer token 暴露在前端可读存储中。
 * 课程列表与当前课程接口决定学习路径、资源大厅、课程资料问答和画像的课程上下文。
+* `GET /api/v1/courses/with-knowledge` 只返回当前用户可访问且已具备可检索知识库的课程；管理员可看到全部就绪课程，学生按有效选课记录过滤，`course_id` 返回稳定 UUID。
 
 ### 2.1 统一 AI 消息入口
 
@@ -265,9 +267,9 @@ ModelCallLog.meta_json.predicted_intent / expected_intent / comment
 ```text
 用户显式选择“课程资料问答”
   ↓
-校验 course_id、课程访问权限、CloudRagProvider、远端知识库状态
+校验 course_id、课程访问权限和当前 RAG 后端状态
   ↓
-CloudRagProvider 检索 / 文档问答
+CloudRagProvider 检索；`RAG_BACKEND=local_pgvector` 时由本地 PGVector 混合检索
   ↓
 返回 answer + citations
 ```
@@ -275,7 +277,8 @@ CloudRagProvider 检索 / 文档问答
 约束：
 
 * 必须有 `course_id`。
-* 必须有可用 CloudRagProvider 和已完成向量化的课程资料。
+* `iflytek_chatdoc` 模式必须有可用 CloudRagProvider；`local_pgvector` 模式必须有可检索本地文档和向量切片。
+* `courses/{course_id}/ai-context` 会按后端返回 `knowledge_ready`、`file_ids_count`、`qa_mode` 和 `rag_backend`，前端据此启用或禁用课程资料问答。
 * 不创建 ResourceTaskCard。
 * 不打开 ArtifactCanvas。
 * 若未命中文档，应根据课程绑定策略决定是否允许回退普通 Chat，并清晰提示引用不足。
@@ -804,6 +807,19 @@ DELETE /api/v1/admin/model-providers/logs
 GET    /api/v1/admin/model-providers/traces/{trace_id}
 GET    /api/v1/admin/model-providers/usage-stats
 ```
+
+学生端个人模型覆盖：
+
+```http
+GET    /api/v1/me/model-override
+PUT    /api/v1/me/model-override
+DELETE /api/v1/me/model-override
+POST   /api/v1/me/model-override/test
+```
+
+- 普通学生可读取、保存、删除和测试自己的聊天模型覆盖配置。
+- 覆盖启用后，普通对话优先使用个人供应商；未启用时仍使用管理员在网关中心维护的默认模型。
+- API Key 使用项目加密密钥托管，前端不回传已保存的明文密钥；测试接口只对传入的草稿配置进行连通性检测，不写数据库。
 
 Intent Router 配置接口：
 
@@ -1778,7 +1794,9 @@ ModelCallLog
 | 后端资源生成 | `pytest backend/tests/test_resource_generation_task.py` | 验证任务创建、重试、状态和引用。 |
 | 后端画像 | `pytest backend/tests/test_learning_profile_repository.py backend/tests/test_profile_extractor.py` | 验证画像证据和纠偏。 |
 | 后端知识库 | `pytest backend/tests/test_knowledge_upload_policy.py backend/tests/test_native_chunks_routes.py` | 验证上传策略和分段接口。 |
-| 前端构建 | `npm run build`（在 `frontend` 目录） | 验证类型和页面构建。 |
+| 本地知识库回归 | `pytest backend/tests/test_local_knowledge_markdown.py backend/tests/test_knowledge_regressions.py` | 验证 Markdown 解析、课程就绪、先修关系、权限过滤和本地检索。 |
+| 前端全量测试 | `pnpm test`（在 `frontend` 目录） | 验证 API 契约、组件逻辑和前端治理规则。 |
+| 前端构建 | `pnpm build`（在 `frontend` 目录） | 验证 TypeScript 和生产构建。 |
 | 全量守卫 | `make guard` | 合并前优先执行后端静态检查和关键 smoke tests。 |
 
 ---
@@ -1817,7 +1835,19 @@ ArtifactCanvas 展示正文、引用、画像摘要和版本
 
 ## T-B-07 本地知识库验收补充
 
+- `RAG_BACKEND=local_pgvector` 时复用现有知识库上传和检索路由，不删除 ChatDoc 路由或配置。
+- 当前已导入 7 条课程主线共 1165 份本地文档、24167 个可检索切片。
+- `GET /api/v1/courses/with-knowledge` 必须返回 7 门已就绪课程；学生结果应受选课范围限制，管理员可返回全部。
+- `data_system` 课程查询“高可用系统”应返回 `retrieval_mode=local_pgvector`、相关片段、页码和本地切片 ID。
+- 本地解析支持 PDF、Markdown、MDX 和纯文本；扫描版 PDF 仍需 OCR。
+- 本地向量为 BGE-small-zh-v1.5 的 512 维；模型权重不进入仓库，首次运行前确认 `LOCAL_EMBEDDING_CACHE_DIR`。
+- Markdown 标题路径按数据库列宽安全截断，完整路径保留在 JSON 元数据中。
+- 前端生产构建、`tsc --noEmit`、Vitest 全量测试和后端 Ruff 检查均需通过后再合并。
+
+### 历史验收要点
+
 - RAG_BACKEND=local_pgvector 时复用现有知识库上传和检索路由，不删除 ChatDoc 路由或配置。
 - 上传 PDF 后应完成 PyMuPDF 解析、保留页码的文本分块、512 维本地向量化、PGVector 入库。
-- 输入明确问题后，检索响应必须返回 etrieval_mode=local_pgvector、相关片段、页码和本地切片 ID。
+- 输入明确问题后，检索响应必须返回 `retrieval_mode=local_pgvector`、相关片段、页码和本地切片 ID。
+
 - 模型权重不进入仓库；首次运行前由操作者确认下载目录，Windows 推荐配置到 D 盘。

@@ -4,9 +4,11 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Activity,
   BellRing,
+  BookOpen,
   BookOpenCheck,
   CalendarDays,
   ClipboardList,
+  Code2,
   Compass,
   Cpu,
   HelpCircle,
@@ -50,10 +52,14 @@ const studentMenuGroups: DockMenuGroup[] = [
     items: [
       { to: '/learning-path', label: '学习路径', helper: '章节路径与学习行动工作台', canvas: 'path', Icon: Compass },
       { to: '/calendar', label: '学习日历', helper: '按日期安排学习、复盘与资源', canvas: 'calendar', Icon: CalendarDays },
+      { to: '/curriculum', label: '课程体系', helper: '计算机与人工智能课程地图', canvas: 'curriculum', Icon: BookOpen },
     ],
   },
   {
     items: [{ to: '/resource-hall', label: '资源大厅', helper: '社区资源网格', canvas: 'hall', Icon: Users }],
+  },
+  {
+    items: [{ to: '/sandbox', label: '代码沙箱', helper: '在线编程实验与 AI 代码辅导', canvas: 'sandbox', Icon: Code2 }],
   },
   {
     items: [

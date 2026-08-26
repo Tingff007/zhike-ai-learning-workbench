@@ -26,6 +26,7 @@ from app.api.v1.routes import (
     webhooks,
     ta,
     ta_student,
+    user_model_override,
 )
 from app.core.deps import require_admin
 
@@ -58,3 +59,4 @@ api_router.include_router(admin.router, prefix="/admin", tags=["admin"], depende
 # TA 端路由（无需 admin 权限，ta 或 admin 角色均可访问，权限由业务层 TAGate 守卫）
 api_router.include_router(ta.router)
 api_router.include_router(ta_student.router)
+api_router.include_router(user_model_override.router, prefix="/me/model-override", tags=["user-model-override"])
