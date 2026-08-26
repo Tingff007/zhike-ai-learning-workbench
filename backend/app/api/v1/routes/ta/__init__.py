@@ -5,6 +5,7 @@
 from fastapi import APIRouter
 
 from . import (
+    agent,
     alerts,
     announcements,
     assignments,
@@ -18,6 +19,7 @@ from . import (
 )
 
 router = APIRouter()
+router.include_router(agent.router)
 router.include_router(classes.router)
 router.include_router(assignments.router)
 router.include_router(lesson_plans.router)

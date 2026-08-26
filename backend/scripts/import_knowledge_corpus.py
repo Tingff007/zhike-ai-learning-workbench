@@ -176,11 +176,21 @@ def _run(
                 continue
 
             content = path.read_bytes()
+            # manifest 哈希基于 GitHub 原始字节生成；本地 core.autocrlf=true 会把检出文本转成
+            # CRLF，但被 git 判定为二进制（或未标记文本）的文件保持不变。因此这里同时用
+            # 原始字节与规范化 LF 内容做双候选匹配，取能命中 manifest 哈希的内容入库。
+            normalized = content.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
             content_hash = hashlib.sha256(content).hexdigest()
-            if row.get("sha256") and content_hash != row["sha256"]:
-                summary["failed"] += 1
-                summary["failures"].append({"path": row["path"], "error": "hash_mismatch"})
-                continue
+            if content_hash == row.get("sha256"):
+                ingest_content = content
+            else:
+                content_hash = hashlib.sha256(normalized).hexdigest()
+                if content_hash == row.get("sha256"):
+                    ingest_content = normalized
+                else:
+                    summary["failed"] += 1
+                    summary["failures"].append({"path": row["path"], "error": "hash_mismatch"})
+                    continue
 
             if not dry_run and _document_exists(db, course, content_hash):
                 summary["duplicates"] += 1
@@ -188,7 +198,7 @@ def _run(
 
             if dry_run:
                 try:
-                    chunks = parse_markdown(content)
+                    chunks = parse_markdown(ingest_content)
                 except LocalKnowledgeError as exc:
                     if _is_empty_markdown_error(exc):
                         summary["skipped_empty"] += 1
@@ -205,7 +215,7 @@ def _run(
                     course.slug,
                     row["path"],
                     "text/markdown",
-                    content,
+                    ingest_content,
                     str(admin.id),
                     source_meta_json=_source_meta(row, path),
                     source_path=str(path),

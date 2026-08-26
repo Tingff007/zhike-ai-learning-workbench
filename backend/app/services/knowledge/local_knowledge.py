@@ -234,12 +234,16 @@ def parse_markdown(content: bytes) -> list[ParsedChunk]:
 
 @dataclass
 class _Bm25Index:
-    """某课程的 BM25 索引及其对应的切片内容，用于混合检索。"""
+    """某课程的 BM25 索引及其对应的切片内容，用于混合检索。
+
+    缓存只保存可序列化的纯数据（文本/路径/ID），不持有 ORM 实例，避免跨请求
+    复用缓存时因原 Session 已关闭而触发 DetachedInstanceError。
+    """
 
     bm25: BM25Okapi
     chunk_ids: list[str]                        # 与 BM25 词表顺序一致的 chunk_id 列表
-    chunk_map: dict[str, DocumentChunk]          # chunk_id -> DocumentChunk 快速查找
-    doc_map: dict[str, Document]                 # document_id -> Document 快速查找
+    chunk_data: dict[str, dict]                 # chunk_id -> {content, section_path, page_no, chunk_index, document_id}
+    doc_titles: dict[str, str]                  # document_id -> 文档标题
 
 
 # 课程级 BM25 索引缓存；文档发生变更时按课程失效，避免每次检索都重建
@@ -259,7 +263,7 @@ def _fit_column_text(value: str | None, max_length: int) -> str | None:
 
 
 def _build_bm25_index(db: Session, course_id) -> _Bm25Index:
-    """从数据库加载课程的活跃切片并构建 BM25 索引。"""
+    """从数据库加载课程的活跃切片并构建 BM25 索引（只保留纯数据，不持有 ORM 对象）。"""
     rows = db.execute(
         select(DocumentChunk, Document)
         .join(Document, Document.id == DocumentChunk.document_id)
@@ -272,17 +276,23 @@ def _build_bm25_index(db: Session, course_id) -> _Bm25Index:
         .order_by(DocumentChunk.id)
     ).all()
     chunk_ids: list[str] = []
-    chunk_map: dict[str, DocumentChunk] = {}
-    doc_map: dict[str, Document] = {}
+    chunk_data: dict[str, dict] = {}
+    doc_titles: dict[str, str] = {}
     corpus: list[list[str]] = []
     for chunk, doc in rows:
         cid = str(chunk.id)
         did = str(doc.id)
         chunk_ids.append(cid)
-        chunk_map[cid] = chunk
-        doc_map[did] = doc
+        chunk_data[cid] = {
+            "content": chunk.content,
+            "section_path": chunk.section_path,
+            "page_no": chunk.page_no,
+            "chunk_index": chunk.chunk_index,
+            "document_id": str(doc.id),
+        }
+        doc_titles[did] = doc.title
         corpus.append(_tokenize(chunk.content))
-    return _Bm25Index(bm25=BM25Okapi(corpus), chunk_ids=chunk_ids, chunk_map=chunk_map, doc_map=doc_map)
+    return _Bm25Index(bm25=BM25Okapi(corpus), chunk_ids=chunk_ids, chunk_data=chunk_data, doc_titles=doc_titles)
 
 
 def _invalidate_bm25_cache(course_id) -> None:
@@ -519,30 +529,38 @@ class LocalKnowledgeService:
         vector_weight = settings.LOCAL_KNOWLEDGE_VECTOR_WEIGHT
         fused: dict[str, dict] = {}
 
-        # 先加入向量结果
+        # 先加入向量结果（转纯数据，避免跨请求持有 ORM 实例）
         for chunk_id, (sim, chunk, doc) in vector_results.items():
-            fused[chunk_id] = {"vector_sim": sim, "bm25_score": 0.0, "chunk": chunk, "document": doc}
+            fused[chunk_id] = {
+                "vector_sim": sim,
+                "bm25_score": 0.0,
+                "chunk": {
+                    "content": chunk.content,
+                    "section_path": chunk.section_path,
+                    "page_no": chunk.page_no,
+                    "chunk_index": chunk.chunk_index,
+                    "document_id": str(doc.id),
+                },
+                "document": str(doc.id),
+                "document_title": doc.title,
+            }
 
         # 再加入 BM25 结果（含 document_id 过滤）
         uuid_doc_id = uuid.UUID(document_id) if document_id else None
         for chunk_id, score in bm25_top:
-            if uuid_doc_id is not None:
-                chunk_obj = bm25_index.chunk_map.get(chunk_id)
-                if chunk_obj is None or chunk_obj.document_id != uuid_doc_id:
-                    continue
+            chunk_item = bm25_index.chunk_data.get(chunk_id)
+            if chunk_item is None:
+                continue
+            if uuid_doc_id is not None and chunk_item["document_id"] != str(uuid_doc_id):
+                continue
             norm_bm25 = score / bm25_max
             if chunk_id in fused:
                 fused[chunk_id]["bm25_score"] = norm_bm25
             else:
-                chunk_obj = bm25_index.chunk_map.get(chunk_id)
-                if chunk_obj is None:
-                    continue
-                doc_obj = bm25_index.doc_map.get(str(chunk_obj.document_id))
-                if doc_obj is None or doc_obj.deleted_at is not None:
-                    continue
                 fused[chunk_id] = {
                     "vector_sim": 0.0, "bm25_score": norm_bm25,
-                    "chunk": chunk_obj, "document": doc_obj,
+                    "chunk": chunk_item, "document": chunk_item["document_id"],
+                    "document_title": bm25_index.doc_titles.get(chunk_item["document_id"]) or chunk_item["document_id"],
                 }
 
         # 计算融合分并排序
@@ -551,19 +569,22 @@ class LocalKnowledgeService:
 
         sorted_items = sorted(fused.items(), key=lambda x: x[1]["fused"], reverse=True)
 
-        # ── 4. 组装结果 ──
+        # ── 4. 组装结果（向量与 BM25 来源均已是纯数据 dict）──
         results: list[Citation] = []
         for chunk_id, data in sorted_items[:limit]:
             chunk = data["chunk"]
-            document = data["document"]
+            document_id = data["document"]
+            source_title = data.get("document_title") or bm25_index.doc_titles.get(document_id) or document_id
+            content = chunk["content"]
+            section_path = chunk.get("section_path")
             results.append(Citation(
-                source_id=str(document.id), source_title=document.title,
-                page_no=chunk.page_no, chunk_index=chunk.chunk_index,
-                local_chunk_id=str(chunk.id), chunk_id=str(chunk.id),
+                source_id=str(document_id), source_title=source_title,
+                page_no=chunk.get("page_no"), chunk_index=chunk.get("chunk_index"),
+                local_chunk_id=str(chunk_id), chunk_id=str(chunk_id),
                 provenance_source="local_pgvector", retrieval_mode="local_pgvector",
                 similarity=round(data["fused"], 4),
-                snippet=chunk.content[:settings.LOCAL_KNOWLEDGE_SNIPPET_SIZE],
-                content=chunk.content, section_path=chunk.section_path,
+                snippet=content[:settings.LOCAL_KNOWLEDGE_SNIPPET_SIZE],
+                content=content, section_path=section_path,
             ))
 
         return results

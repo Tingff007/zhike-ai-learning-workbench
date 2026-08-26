@@ -1,4 +1,5 @@
 import { request, requestBlob } from './client';
+import type { Citation } from '../types';
 
 /** 助教端与学生端互动 API 层：统一走 /api/v1 前缀的 request 封装。 */
 
@@ -639,4 +640,40 @@ export function studentListNotifications(unreadOnly = false): Promise<{ items: T
 
 export function studentReadNotification(notificationId: string): Promise<{ message: string }> {
   return request<{ message: string }>(`/ta-student/notifications/${encodeURIComponent(notificationId)}/read`, { method: 'POST' });
+}
+
+// ===== 教师端 AI Agent 对话 =====
+
+export type TaAgentDataFact = {
+  label: string;
+  value: string;
+  detail?: string | null;
+};
+
+export type TaAgentTraceEvent = {
+  step: string;
+  status: string;
+  detail?: string | null;
+  duration_ms?: number | null;
+};
+
+export type TaAgentMessageResponse = {
+  conversation_id: string;
+  answer: string;
+  citations: Citation[];
+  data_facts: TaAgentDataFact[];
+  agent_trace: TaAgentTraceEvent[];
+  quality?: { cite_check?: string; safety?: string; citation_coverage?: string | null } | null;
+  route: string;
+  refused: boolean;
+  refusal_reason?: string | null;
+};
+
+/** 发送教师端 Agent 对话消息；requireCitations 缺省由后端按意图决定。 */
+export function taAgentMessage(payload: { message: string; course_id?: string | null; conversation_id?: string | null; require_citations?: boolean | null }): Promise<TaAgentMessageResponse> {
+  return request<TaAgentMessageResponse>('/ta/agent/messages', {
+    method: 'POST',
+    timeoutMs: 120_000,
+    body: JSON.stringify(payload),
+  });
 }

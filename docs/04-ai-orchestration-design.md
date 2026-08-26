@@ -83,6 +83,27 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 它不能替代 Chat / Agent 能力，也不能承担首页普通对话和资源生成的大脑。
 ```
 
+### 2.3 教师端 AI 教学助手（TaAgentOrchestratorService）
+
+教师端（TA Portal）提供独立的对话式 Agent 入口 `POST /api/v1/ta/agent/messages`，
+由 `backend/app/services/ta/agent.py` 的 `TaAgentOrchestratorService` 编排，定位与学习端
+`AiOrchestratorService` 互补：
+
+适用范围：
+
+* 基于本地课程知识库的备课/知识点问答（复用 `CourseRetriever` 本地 pgvector 混合检索）；
+* 教师名下班级/作业/提交/成绩/测验的只读统计查询（直接读取数据库真实记录，不调用大模型）；
+* 低置信度拒答与强制引用（零幻觉防线，复用 `retrieval_guard` 与 `Citation` 契约）。
+
+关键边界：
+
+```text
+教师端 Agent 只做只读查询与检索，不执行发布/删除/评分等副作用操作；
+知识问答证据不足（相似度低于 RAG_RETRIEVAL_MIN_SCORE）时明确拒答，禁止编造。
+```
+
+该能力由 **ChatProvider + 本地 pgvector 知识库** 提供，`RAG_BACKEND=local_pgvector` 时生效。
+
 ---
 
 ## 3. 总体调用原则
