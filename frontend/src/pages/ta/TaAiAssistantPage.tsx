@@ -11,63 +11,18 @@ import { PageHeader, PageHeaderToolbar } from '../../components/shared/PageHeade
 import { CitationEvidencePanel } from '../../components/citation/CitationEvidencePanel';
 import type { Citation } from '../../types';
 
-/** 教师端对话消息：用户提问或 Agent 回答（含引用、数据事实、工具轨迹与待确认操作）。 */
+/** 教师端对话消息：用户提问或 Agent 回答（含引用、数据事实与待确认操作）。 */
 type TaChatMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   citations: Citation[];
   dataFacts: TaAgentDataFact[];
-  trace: Array<{ step: string; status: string; detail?: string | null }>;
   refused: boolean;
   route: string;
   pendingConfirmation: TaAgentPendingConfirmation | null;
   confirmationResolved?: boolean;
 };
-
-const AGENT_STEPS = ['安全审查', '意图路由', '工具调用', '工具结果', '回答生成', '输出安全审查'];
-
-/** 把 Agent 步骤轨迹按固定步骤顺序归并，未执行的步骤保持待触发状态。 */
-function normalizeTrace(trace: TaChatMessage['trace']): Array<{ step: string; status: string; detail?: string | null }> {
-  const byStep = new Map<string, { step: string; status: string; detail?: string | null }>();
-  for (const item of trace) {
-    // 工具调用/工具结果可能多步，归并到「工具调用」「工具结果」两档
-    const key = item.step.startsWith('工具调用') ? '工具调用' : item.step.startsWith('工具结果') ? '工具结果' : item.step;
-    byStep.set(key, { step: key, status: item.status, detail: item.detail });
-  }
-  return AGENT_STEPS.map((step) => byStep.get(step) ?? { step, status: 'pending' });
-}
-
-function TraceSteps({ trace }: { trace: TaChatMessage['trace'] }): JSX.Element {
-  const steps = normalizeTrace(trace);
-  return (
-    <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3">
-      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
-        <ShieldCheck className="h-3.5 w-3.5" />
-        Agent 执行轨迹
-      </div>
-      <ol className="space-y-1.5">
-        {steps.map((item) => (
-          <li key={item.step} className="flex items-start gap-2 text-xs">
-            <span
-              className={`mt-0.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
-                item.status === 'completed'
-                  ? 'bg-emerald-500'
-                  : item.status === 'blocked'
-                    ? 'bg-red-500'
-                    : item.status === 'warning'
-                      ? 'bg-amber-500'
-                      : 'bg-zinc-300'
-              }`}
-            />
-            <span className="text-zinc-600">{item.step}</span>
-            {item.detail ? <span className="text-zinc-400">· {item.detail}</span> : null}
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
 
 function DataFactCards({ facts }: { facts: TaAgentDataFact[] }): JSX.Element | null {
   if (facts.length === 0) return null;
@@ -171,7 +126,6 @@ function AssistantBubble({
             <CitationEvidencePanel citations={message.citations} />
           </div>
         ) : null}
-        <TraceSteps trace={message.trace} />
       </div>
     </div>
   );
@@ -216,7 +170,6 @@ export function TaAiAssistantPage(): JSX.Element {
       content: text,
       citations: [],
       dataFacts: [],
-      trace: [],
       refused: false,
       route: '',
       pendingConfirmation: null,
@@ -238,7 +191,6 @@ export function TaAiAssistantPage(): JSX.Element {
           content: response.answer,
           citations: response.citations ?? [],
           dataFacts: response.data_facts ?? [],
-          trace: response.agent_trace ?? [],
           refused: response.refused,
           route: response.route,
           pendingConfirmation: response.pending_confirmation ?? null,
