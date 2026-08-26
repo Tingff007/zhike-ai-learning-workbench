@@ -1,5 +1,5 @@
 """助教端雷达图纯逻辑单元测试：学生五维评分计算。"""
-from app.api.v1.routes.ta import _build_student_radar_dimensions
+from app.api.v1.routes.ta.diagnosis import _build_student_radar_dimensions
 
 
 def _dims(**overrides) -> list[dict]:

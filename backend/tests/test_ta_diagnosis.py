@@ -1,16 +1,16 @@
 """学情诊断纯逻辑单元测试：薄弱点聚合、强度分级、班级指标与诊断降级文案。"""
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import (
+from app.api.v1.routes.ta._shared import _weakness_severity
+from app.api.v1.routes.ta.alerts import _mastery_gap_candidates
+from app.api.v1.routes.ta.diagnosis import (
     _aggregate_class_metrics,
     _aggregate_weak_points,
     _diagnosis_fallback,
     _diagnosis_messages,
-    _mastery_gap_candidates,
     _parse_diagnosis_text,
     _suggested_practice,
     _top_weak_concepts,
-    _weakness_severity,
 )
 
 

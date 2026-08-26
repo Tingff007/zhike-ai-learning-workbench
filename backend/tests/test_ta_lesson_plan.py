@@ -1,13 +1,13 @@
-"""智能备课纯逻辑单元测试：教案降级骨架、LLM 输出有效性、检索注入与图片批改 prompt。"""
+"""智能备课纯逻辑单元测试：教案降级骨架、LLM 输出解析、检索注入与图片批改 prompt。"""
+import json
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import (
+from app.api.v1.routes.ta.grading import _grading_policy, _vision_grading_prompt
+from app.api.v1.routes.ta.lesson_plans import (
     _fallback_lesson_outline,
     _format_citations_for_prompt,
-    _grading_policy,
-    _is_valid_llm_outline,
     _lesson_plan_generation_messages,
-    _vision_grading_prompt,
+    _parse_lesson_plan_json,
 )
 
 
@@ -33,31 +33,26 @@ def _fake_result(status: str, answer: str):
     return SimpleNamespace(status=status, answer=answer)
 
 
-def test_is_valid_llm_outline_success_long_enough() -> None:
-    answer = (
-        "# 第3章 反向传播\n\n"
-        "## 教学目标\n\n"
-        "掌握反向传播算法的推导与实现，能手工完成两层网络的梯度计算，"
-        "理解链式法则在深度学习中的作用。\n\n"
-        "## 教学重点难点\n\n"
-        "重点：链式法则与梯度逐层回传；难点：多层网络的梯度消失现象。\n\n"
-        "## 教学过程\n\n"
-        "1. 复习前向传播；2. 讲解反向传播推导；3. 动手实现两层神经网络。\n\n"
-        "## 作业布置\n\n"
-        "完成课后习题，并实现一个两层神经网络验证梯度正确性。\n\n"
-        "## 板书设计\n\n"
-        "板书按公式推导流程逐步展开。\n"
-    )
-    assert _is_valid_llm_outline(_fake_result("success", answer)) is True
+def test_parse_lesson_plan_json_success() -> None:
+    raw = json.dumps({
+        "objectives": ["掌握反向传播"],
+        "key_points": ["链式法则"],
+        "difficulties": ["梯度消失"],
+        "process": [{"step": "引入", "content": "复习前向传播", "duration": "5分钟"}],
+        "homework": "完成课后习题",
+        "board": "公式推导",
+    }, ensure_ascii=False)
+    parsed = _parse_lesson_plan_json(raw)
+    assert parsed is not None
+    assert parsed["objectives"] == ["掌握反向传播"]
+    assert parsed["process"][0]["step"] == "引入"
 
 
-def test_is_valid_llm_outline_fallback_status_rejected() -> None:
-    # 网关降级返回 status="fallback"（不抛异常），必须被识别为降级而非 LLM 成功
-    assert _is_valid_llm_outline(_fake_result("fallback", "模型网关暂时无法完成真实模型调用……")) is False
-
-
-def test_is_valid_llm_outline_too_short_rejected() -> None:
-    assert _is_valid_llm_outline(_fake_result("success", "短")) is False
+def test_parse_lesson_plan_json_rejects_invalid() -> None:
+    # 缺 objectives 锚点或非法 JSON 必须返回 None，绝不把不可解析结果当作成功
+    assert _parse_lesson_plan_json('{"key_points": ["链式法则"]}') is None
+    assert _parse_lesson_plan_json("模型网关暂时无法完成真实模型调用……") is None
+    assert _parse_lesson_plan_json(None) is None
 
 
 def test_format_citations_empty_returns_empty() -> None:

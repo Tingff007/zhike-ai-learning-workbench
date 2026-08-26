@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import _build_alert_notification, _dispatch_intervention
+from app.api.v1.routes.ta.alerts import _build_alert_notification, _dispatch_intervention
 from app.api.v1.routes.ta_student import _build_notification_dict
 
 ALERT_TITLE = "李华 掌握度预警：卷积神经网络"

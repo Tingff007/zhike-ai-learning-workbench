@@ -1,11 +1,12 @@
 """Wave 3 纯函数单测：客观题判分与每题正确率统计（无 DB）。"""
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import _grade_quiz_attempt, _quiz_stats_by_question
+from app.api.v1.routes.ta._shared import _grade_quiz_attempt
+from app.api.v1.routes.ta.quizzes import _quiz_stats_by_question
 
 
-def _q(qid: str, answer: str, score: float = 10) -> SimpleNamespace:
-    return SimpleNamespace(id=qid, prompt=f"题{qid}", answer=answer, score=score)
+def _q(qid: str, answer: str, score: float = 10, question_type: str = "single_choice") -> SimpleNamespace:
+    return SimpleNamespace(id=qid, prompt=f"题{qid}", answer=answer, score=score, question_type=question_type)
 
 
 def test_grade_all_correct() -> None:

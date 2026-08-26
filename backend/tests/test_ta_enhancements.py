@@ -2,15 +2,14 @@
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import (
+from app.api.v1.routes.ta.alerts import _pick_late_submission_candidates, _pick_resource_idle_candidates
+from app.api.v1.routes.ta.diagnosis import (
     _avg_mastery_per_student,
     _build_compare_rows,
     _build_trend_series,
     _compute_heatmap_matrix,
-    _compute_grading_stats,
-    _pick_late_submission_candidates,
-    _pick_resource_idle_candidates,
 )
+from app.api.v1.routes.ta.grading import _compute_grading_stats
 
 
 def _row(student_id, mastery):

@@ -6,13 +6,9 @@ from types import SimpleNamespace
 import pytest
 from fastapi import HTTPException
 
-from app.api.v1.routes.ta import (
-    _build_grades_csv_rows,
-    _build_grading_export_rows,
-    _compute_is_late,
-    _require_uuid,
-    _resolve_submission_delta,
-)
+from app.api.v1.routes.ta._shared import _compute_is_late, _require_uuid, _resolve_submission_delta
+from app.api.v1.routes.ta.assignments import _build_grades_csv_rows
+from app.api.v1.routes.ta.grading import _build_grading_export_rows
 
 
 def test_require_uuid_valid_returns_uuid() -> None:

@@ -1,7 +1,7 @@
 """工作台纯逻辑单元测试：最近待办合并。"""
 from datetime import datetime, timezone
 
-from app.api.v1.routes.ta import _merge_recent_tasks
+from app.api.v1.routes.ta.dashboard import _merge_recent_tasks
 
 
 def _task(task_type: str, sort_at: datetime) -> dict:

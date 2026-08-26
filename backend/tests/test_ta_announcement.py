@@ -1,5 +1,5 @@
 """助教公告纯逻辑单元测试：多班级目标归一化与去重。"""
-from app.api.v1.routes.ta import AnnouncementCreateRequest, _normalize_announcement_class_ids
+from app.api.v1.routes.ta.announcements import AnnouncementCreateRequest, _normalize_announcement_class_ids
 
 
 def test_normalize_announcement_class_ids_multi_dedup() -> None:

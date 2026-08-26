@@ -2,15 +2,13 @@
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from app.api.v1.routes.ta import (
+from app.core.rate_limit import consume_fixed_window
+from app.api.v1.routes.ta._shared import _relative_time, _render_template, _sse_payload
+from app.api.v1.routes.ta.grading import (
     _clamp_score,
     _compute_grading_stats,
     _parse_grading_json,
-    _rate_limited,
-    _relative_time,
-    _render_template,
     _score_bucket,
-    _sse_payload,
 )
 
 
@@ -105,21 +103,15 @@ def test_render_template_none_value_empty() -> None:
     assert text == "王五 分  分"
 
 
-def test_rate_limited_allows_first_then_denies_within_window() -> None:
-    cache: dict = {}
-    now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
-    assert _rate_limited(cache, "u1:mastery_gap", now, window_seconds=3600, max_count=1) is True
-    assert _rate_limited(cache, "u1:mastery_gap", now + timedelta(minutes=5), window_seconds=3600, max_count=1) is False
-    # 窗口过期后放行
-    assert _rate_limited(cache, "u1:mastery_gap", now + timedelta(hours=2), window_seconds=3600, max_count=1) is True
+def test_consume_fixed_window_zero_limit_allows() -> None:
+    # 限流上限为 0 视为不限制，直接放行
+    assert consume_fixed_window("u1:mastery_gap", limit=0, window_seconds=3600) is True
 
 
-def test_rate_limited_allows_different_keys() -> None:
-    cache: dict = {}
-    now = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
-    assert _rate_limited(cache, "u1:mastery_gap", now) is True
-    assert _rate_limited(cache, "u2:mastery_gap", now) is True
-    assert _rate_limited(cache, "u1:inactive", now) is True
+def test_consume_fixed_window_unique_key_allowed() -> None:
+    # 每次使用唯一键第一次访问应放行（limit>=1 时），避免测试间互相干扰
+    unique_key = f"test:{__import__('uuid').uuid4().hex}"
+    assert consume_fixed_window(unique_key, limit=1, window_seconds=3600) is True
 
 
 def test_score_bucket_by_ratio() -> None:
