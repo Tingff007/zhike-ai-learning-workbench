@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bot, Send, ShieldCheck, Sparkles } from 'lucide-react';
-import { taAgentMessage, type TaAgentMessageResponse, type TaAgentDataFact } from '../../api/ta';
+import { Bot, Send, ShieldCheck, Sparkles, CheckCircle, XCircle } from 'lucide-react';
+import {
+  taAgentMessage,
+  taAgentConfirm,
+  type TaAgentMessageResponse,
+  type TaAgentDataFact,
+  type TaAgentPendingConfirmation,
+} from '../../api/ta';
 import { PageHeader, PageHeaderToolbar } from '../../components/shared/PageHeader';
 import { CitationEvidencePanel } from '../../components/citation/CitationEvidencePanel';
 import type { Citation } from '../../types';
 
-/** 教师端对话消息：用户提问或 Agent 回答（含引用、数据事实与步骤轨迹）。 */
+/** 教师端对话消息：用户提问或 Agent 回答（含引用、数据事实、工具轨迹与待确认操作）。 */
 type TaChatMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -15,14 +21,20 @@ type TaChatMessage = {
   trace: Array<{ step: string; status: string; detail?: string | null }>;
   refused: boolean;
   route: string;
+  pendingConfirmation: TaAgentPendingConfirmation | null;
+  confirmationResolved?: boolean;
 };
 
-const AGENT_STEPS = ['安全审查', '意图路由', '课程解析', '本地知识库检索', '回答生成', '引用核验'];
+const AGENT_STEPS = ['安全审查', '意图路由', '工具调用', '工具结果', '回答生成', '输出安全审查'];
 
 /** 把 Agent 步骤轨迹按固定步骤顺序归并，未执行的步骤保持待触发状态。 */
 function normalizeTrace(trace: TaChatMessage['trace']): Array<{ step: string; status: string; detail?: string | null }> {
   const byStep = new Map<string, { step: string; status: string; detail?: string | null }>();
-  for (const item of trace) byStep.set(item.step, item);
+  for (const item of trace) {
+    // 工具调用/工具结果可能多步，归并到「工具调用」「工具结果」两档
+    const key = item.step.startsWith('工具调用') ? '工具调用' : item.step.startsWith('工具结果') ? '工具结果' : item.step;
+    byStep.set(key, { step: key, status: item.status, detail: item.detail });
+  }
   return AGENT_STEPS.map((step) => byStep.get(step) ?? { step, status: 'pending' });
 }
 
@@ -32,7 +44,7 @@ function TraceSteps({ trace }: { trace: TaChatMessage['trace'] }): JSX.Element {
     <div className="mt-3 rounded-lg border border-zinc-100 bg-zinc-50/60 p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-zinc-500">
         <ShieldCheck className="h-3.5 w-3.5" />
-        Agent 执行轨迹（零幻觉防线）
+        Agent 执行轨迹
       </div>
       <ol className="space-y-1.5">
         {steps.map((item) => (
@@ -72,7 +84,63 @@ function DataFactCards({ facts }: { facts: TaAgentDataFact[] }): JSX.Element | n
   );
 }
 
-function AssistantBubble({ message }: { message: TaChatMessage }): JSX.Element {
+function ConfirmationBar({
+  pending,
+  onConfirm,
+  onCancel,
+  resolved,
+}: {
+  pending: TaAgentPendingConfirmation;
+  onConfirm: () => void;
+  onCancel: () => void;
+  resolved: boolean;
+}): JSX.Element {
+  if (resolved) {
+    return (
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+        <CheckCircle className="h-4 w-4" />
+        操作已处理
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+      <div className="flex items-center gap-2 text-sm font-medium text-amber-800">
+        <ShieldCheck className="h-4 w-4" />
+        待确认操作：{pending.summary}
+      </div>
+      <p className="mt-1 text-xs text-amber-600">确认后将真正执行（例如布置作业到班级、发布公告），请核对内容。</p>
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+        >
+          <CheckCircle className="h-3.5 w-3.5" />
+          确认执行
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex items-center gap-1.5 rounded-md border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-50"
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          取消
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AssistantBubble({
+  message,
+  onConfirm,
+  onCancel,
+}: {
+  message: TaChatMessage;
+  onConfirm: (message: TaChatMessage) => void;
+  onCancel: (message: TaChatMessage) => void;
+}): JSX.Element {
   return (
     <div className="flex items-start gap-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white">
@@ -89,6 +157,14 @@ function AssistantBubble({ message }: { message: TaChatMessage }): JSX.Element {
             <p className="whitespace-pre-wrap">{message.content}</p>
           )}
         </div>
+        {message.pendingConfirmation ? (
+          <ConfirmationBar
+            pending={message.pendingConfirmation}
+            onConfirm={() => onConfirm(message)}
+            onCancel={() => onCancel(message)}
+            resolved={Boolean(message.confirmationResolved)}
+          />
+        ) : null}
         <DataFactCards facts={message.dataFacts} />
         {message.citations.length > 0 ? (
           <div className="mt-3">
@@ -112,16 +188,15 @@ function UserBubble({ message }: { message: TaChatMessage }): JSX.Element {
 }
 
 /**
- * 教师端 AI 教学助手页：基于本地知识库 RAG 的对话式 Agent。
+ * 教师端 AI 教学助手页：有身份、能聊天、能布置任务的智能体。
  *
- * 回答强制携带知识库引用（零幻觉防线），业务数据查询返回数据库真实统计卡片；
- * 证据不足时后端拒答并在回答中明确说明。
+ * 后端通过 function calling 调用工具（查班级/学生/题库/知识库等只读操作直接执行；
+ * 布置作业/测验/公告等写操作返回待确认，教师点击确认后真正执行）。
  */
 export function TaAiAssistantPage(): JSX.Element {
   const [messages, setMessages] = useState<TaChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [courseId, setCourseId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -144,6 +219,7 @@ export function TaAiAssistantPage(): JSX.Element {
       trace: [],
       refused: false,
       route: '',
+      pendingConfirmation: null,
     };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
@@ -151,9 +227,7 @@ export function TaAiAssistantPage(): JSX.Element {
     try {
       const response: TaAgentMessageResponse = await taAgentMessage({
         message: text,
-        course_id: courseId || null,
         conversation_id: conversationId,
-        require_citations: null,
       });
       setConversationId(response.conversation_id);
       setMessages((prev) => [
@@ -167,6 +241,7 @@ export function TaAiAssistantPage(): JSX.Element {
           trace: response.agent_trace ?? [],
           refused: response.refused,
           route: response.route,
+          pendingConfirmation: response.pending_confirmation ?? null,
         },
       ]);
     } catch (err) {
@@ -176,35 +251,55 @@ export function TaAiAssistantPage(): JSX.Element {
     }
   }
 
+  async function handleConfirm(message: TaChatMessage): Promise<void> {
+    if (!message.pendingConfirmation) return;
+    setError(null);
+    try {
+      await taAgentConfirm({
+        confirmation_id: message.pendingConfirmation.confirmation_id,
+        action: 'confirm',
+      });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === message.id ? { ...m, confirmationResolved: true, pendingConfirmation: null } : m)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '确认执行失败，请稍后重试。');
+    }
+  }
+
+  async function handleCancel(message: TaChatMessage): Promise<void> {
+    if (!message.pendingConfirmation) return;
+    setError(null);
+    try {
+      await taAgentConfirm({
+        confirmation_id: message.pendingConfirmation.confirmation_id,
+        action: 'cancel',
+      });
+      setMessages((prev) =>
+        prev.map((m) => (m.id === message.id ? { ...m, confirmationResolved: true, pendingConfirmation: null } : m)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '取消失败，请稍后重试。');
+    }
+  }
+
   return (
     <div className="mx-auto flex h-full max-w-4xl flex-col px-6 py-6">
       <PageHeader
         title="AI 教学助手"
-        subtitle="基于本地课程知识库的教师端 Agent：回答强制携带引用，证据不足时拒答，杜绝幻觉。"
+        subtitle="我是「智课 AI 教学助手」，可以帮你查班级、看学情、布置作业、创建测验、发布公告、生成教案，还能基于课程知识库答疑（零幻觉）。"
       />
       <PageHeaderToolbar variant="actions">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-zinc-500">课程范围</span>
-          <select
-            value={courseId}
-            onChange={(event) => setCourseId(event.target.value)}
-            className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
-          >
-            <option value="">自动（按班级关联课程）</option>
-            <option value="cs_foundations">计算机科学基础</option>
-            <option value="algorithms">算法与数据结构</option>
-            <option value="web_engineering">Web 与前端工程</option>
-            <option value="data_system">数据与系统设计</option>
-            <option value="ai_ml">机器学习与深度学习</option>
-            <option value="llm_agents">大模型与 AI Agent</option>
-          </select>
+        <div className="flex items-center gap-2 text-sm text-zinc-500">
+          <Sparkles className="h-4 w-4 text-amber-500" />
+          有身份 · 能聊天 · 能布置任务
         </div>
       </PageHeaderToolbar>
 
       <div className="mt-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
         <div className="flex items-center gap-2 border-b border-zinc-200 bg-white px-4 py-2.5 text-xs text-zinc-500">
-          <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-          零幻觉模式：回答仅基于本地知识库检索证据，业务数据来自数据库真实记录
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+          写操作（布置作业/测验/公告）需你确认后才会执行；只读查询与知识库问答直接返回
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -215,8 +310,7 @@ export function TaAiAssistantPage(): JSX.Element {
               </div>
               <div className="text-lg font-semibold text-zinc-700">向 AI 教学助手提问</div>
               <p className="max-w-md text-sm text-zinc-400">
-                例如：「什么是高可用系统」，「帮我梳理 Transformer 注意力机制的教学要点」，
-                「我们班作业完成情况如何」
+                例如：「我有几个班级」「布置一份作业」「查一下题库」「什么是高可用系统」
               </p>
             </div>
           ) : (
@@ -224,7 +318,12 @@ export function TaAiAssistantPage(): JSX.Element {
               message.role === 'user' ? (
                 <UserBubble key={message.id} message={message} />
               ) : (
-                <AssistantBubble key={message.id} message={message} />
+                <AssistantBubble
+                  key={message.id}
+                  message={message}
+                  onConfirm={(m) => void handleConfirm(m)}
+                  onCancel={(m) => void handleCancel(m)}
+                />
               ),
             )
           )}
@@ -233,7 +332,7 @@ export function TaAiAssistantPage(): JSX.Element {
               <span className="h-2 w-2 animate-pulse rounded-full bg-zinc-400" />
               <span className="h-2 w-2 animate-pulse rounded-full bg-zinc-400" style={{ animationDelay: '0.15s' }} />
               <span className="h-2 w-2 animate-pulse rounded-full bg-zinc-400" style={{ animationDelay: '0.3s' }} />
-              正在检索本地知识库…
+              正在思考…
             </div>
           ) : null}
           {error ? <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div> : null}
@@ -252,7 +351,7 @@ export function TaAiAssistantPage(): JSX.Element {
                 }
               }}
               rows={2}
-              placeholder="输入你的教学问题，Enter 发送，Shift+Enter 换行"
+              placeholder="输入你的教学任务，Enter 发送，Shift+Enter 换行"
               className="min-h-[44px] flex-1 resize-none rounded-xl border border-zinc-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/10"
             />
             <button

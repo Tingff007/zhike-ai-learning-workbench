@@ -69,9 +69,9 @@ class ChatInvocationService:
         max_tokens: int = 1200,
         allow_fallback: bool = True,
         json_mode: bool = False,
+        tools: Sequence[dict[str, Any]] | None = None,
     ) -> ChatGenerationResult:
         """执行一次非流式聊天模型调用，并按配置处理降级和日志记录。"""
-
         route_plan = self._build_route_plan(provider_code, allow_fallback=allow_fallback, user_override=user_override)
         failed_attempts: list[dict[str, str]] = []
         skipped_attempts: list[dict[str, str]] = []
@@ -112,13 +112,14 @@ class ChatInvocationService:
                 continue
 
             try:
-                answer, usage = await request_chat_once(
+                answer, tool_calls, usage = await request_chat_once(
                     config=config,
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     json_mode=json_mode,
                     stream=False,
+                    tools=tools,
                 )
             except ChatProviderError as exc:
                 logger.warning(
@@ -167,6 +168,7 @@ class ChatInvocationService:
                 "success",
                 latency_ms,
                 trace_id=get_trace_id(),
+                tool_calls=tool_calls,
             )
 
         return self._local_chat_fallback_result(
@@ -444,7 +446,7 @@ class ChatInvocationService:
     ) -> AsyncIterator[dict[str, Any]]:
         """把非流式供应商响应拆成文本增量，复用前端流式协议。"""
 
-        answer, usage = await request_chat_once(
+        answer, _tool_calls, usage = await request_chat_once(
             config=config,
             messages=messages,
             temperature=temperature,

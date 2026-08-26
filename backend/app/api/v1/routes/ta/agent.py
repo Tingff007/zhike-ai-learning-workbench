@@ -1,7 +1,10 @@
 """助教端 AI Agent 对话路由。
 
-对外暴露 ``POST /ta/agent/messages``：教师以自然语言提问，Agent 基于本地知识库
-检索回答（零幻觉防线），或读取教师名下班级/作业/成绩真实数据返回可核验事实。
+对外暴露：
+- ``POST /ta/agent/messages``：教师以自然语言对话，Agent 有身份、能聊天、能布置任务；
+  写操作返回待确认（pending_confirmation），由教师确认后执行。
+- ``POST /ta/agent/confirm``：教师确认/取消待执行的写操作。
+
 仅 ta/admin 角色可访问；会话轮次写入 conversations 表用于历史回溯。
 """
 from __future__ import annotations
@@ -9,7 +12,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -17,7 +20,12 @@ from app.core.database import get_db
 from app.core.deps import CurrentUser, require_ta
 from app.core.rate_limit import RateLimitExceeded, check_chat_rate_limit
 from app.models import User
-from app.schemas.ta_agent import TaAgentMessageRequest, TaAgentMessageResponse
+from app.schemas.ta_agent import (
+    TaAgentConfirmRequest,
+    TaAgentConfirmResponse,
+    TaAgentMessageRequest,
+    TaAgentMessageResponse,
+)
 from app.services.conversation.repository import ConversationRepository
 from app.services.ta.agent import TaAgentOrchestratorService
 
@@ -38,8 +46,6 @@ async def ta_agent_messages(
     try:
         check_chat_rate_limit(current_user.id, "ta_agent")
     except RateLimitExceeded as exc:
-        from fastapi import HTTPException
-
         raise HTTPException(
             status_code=429,
             detail={"message": "AI 对话请求过于频繁", "scope": exc.scope, "retry_after_seconds": exc.retry_after_seconds},
@@ -49,6 +55,26 @@ async def ta_agent_messages(
     response = await agent_service.handle_message(payload, db, current_user.id)
     _persist_ta_turn(db, current_user.id, payload, response)
     return response
+
+
+@router.post("/agent/confirm", response_model=TaAgentConfirmResponse)
+async def ta_agent_confirm(
+    payload: TaAgentConfirmRequest,
+    current_user: CurrentUser = Depends(require_ta),
+    db: Session = Depends(get_db),
+) -> TaAgentConfirmResponse:
+    """教师确认/取消待执行的写操作（布置作业、创建测验、发布公告等）。"""
+    try:
+        result = await agent_service.execute_confirmation(
+            db, current_user.id, payload.confirmation_id, payload.action
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return TaAgentConfirmResponse(
+        action=result["action"],
+        executed=result["executed"],
+        summary=result.get("summary"),
+    )
 
 
 def _persist_ta_turn(

@@ -109,3 +109,4 @@ from .ta_alert_action import TaAlertAction
 from .ta_notification import TaNotification
 from .ta_quiz import TaQuiz, TaQuizQuestion, TaQuizAttempt
 from .ta_question_bank import TaQuestionBank
+from .ta_agent_confirmation import TaAgentConfirmation

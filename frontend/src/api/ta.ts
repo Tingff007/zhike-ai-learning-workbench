@@ -657,6 +657,13 @@ export type TaAgentTraceEvent = {
   duration_ms?: number | null;
 };
 
+export type TaAgentPendingConfirmation = {
+  confirmation_id: string;
+  tool: string;
+  summary: string;
+  args: Record<string, unknown>;
+};
+
 export type TaAgentMessageResponse = {
   conversation_id: string;
   answer: string;
@@ -667,6 +674,7 @@ export type TaAgentMessageResponse = {
   route: string;
   refused: boolean;
   refusal_reason?: string | null;
+  pending_confirmation?: TaAgentPendingConfirmation | null;
 };
 
 /** 发送教师端 Agent 对话消息；requireCitations 缺省由后端按意图决定。 */
@@ -674,6 +682,15 @@ export function taAgentMessage(payload: { message: string; course_id?: string | 
   return request<TaAgentMessageResponse>('/ta/agent/messages', {
     method: 'POST',
     timeoutMs: 120_000,
+    body: JSON.stringify(payload),
+  });
+}
+
+/** 教师确认/取消待执行的写操作（布置作业、创建测验、发布公告等）。 */
+export function taAgentConfirm(payload: { confirmation_id: string; action: 'confirm' | 'cancel' }): Promise<{ action: string; executed: boolean; summary?: string | null }> {
+  return request<{ action: string; executed: boolean; summary?: string | null }>('/ta/agent/confirm', {
+    method: 'POST',
+    timeoutMs: 60_000,
     body: JSON.stringify(payload),
   });
 }

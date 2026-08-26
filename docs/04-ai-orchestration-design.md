@@ -86,23 +86,30 @@ Cloud RAG / 文档问答 API 只能回答已经上传到对应厂商服务器并
 ### 2.3 教师端 AI 教学助手（TaAgentOrchestratorService）
 
 教师端（TA Portal）提供独立的对话式 Agent 入口 `POST /api/v1/ta/agent/messages`，
-由 `backend/app/services/ta/agent.py` 的 `TaAgentOrchestratorService` 编排，定位与学习端
-`AiOrchestratorService` 互补：
+由 `backend/app/services/ta/agent.py` 的 `TaAgentOrchestratorService` 编排，定位为
+**有身份、能聊天、能布置任务的智能体**（借鉴「yueyang tower」教师端助教设计），
+与学习端 `AiOrchestratorService` 互补。
 
-适用范围：
+身份提示词采用六模块结构（`backend/app/services/ta/prompts.py`）：
+①角色与语境 ②能力边界 ③数据真实性与工具纪律 ④任务执行规则 ⑤输出与表达 ⑥安全红线。
 
-* 基于本地课程知识库的备课/知识点问答（复用 `CourseRetriever` 本地 pgvector 混合检索）；
-* 教师名下班级/作业/提交/成绩/测验的只读统计查询（直接读取数据库真实记录，不调用大模型）；
-* 低置信度拒答与强制引用（零幻觉防线，复用 `retrieval_guard` 与 `Citation` 契约）。
+能力通过 **function calling 工具集**（`backend/app/services/ta/tools.py`）暴露：
+
+* 只读工具（直接执行）：`list_classes` 列班级、`list_class_students` 列学生、
+  `list_assignments` 列作业、`query_question_bank` 检索题库、`list_quizzes` 列测验、
+  `list_courses` 列课程、`search_knowledge_base` 检索本地知识库；
+* 写工具（需教师确认）：`create_assignment` 布置作业、`publish_assignment` 发布作业、
+  `create_quiz` 创建测验、`create_announcement` 发布公告。
 
 关键边界：
 
 ```text
-教师端 Agent 只做只读查询与检索，不执行发布/删除/评分等副作用操作；
-知识问答证据不足（相似度低于 RAG_RETRIEVAL_MIN_SCORE）时明确拒答，禁止编造。
+写操作由模型「提出工具名与参数」，后端先落待确认记录（ta_agent_confirmations）并暂停，
+教师经 POST /api/v1/ta/agent/confirm 确认后才真正执行——模型不得绕过后端直接产生副作用。
+只读查询与知识库检索可直接执行；知识问答证据不足时明确拒答（零幻觉防线）。
 ```
 
-该能力由 **ChatProvider + 本地 pgvector 知识库** 提供，`RAG_BACKEND=local_pgvector` 时生效。
+该能力由 **ChatProvider（function calling）+ 本地 pgvector 知识库** 提供，`RAG_BACKEND=local_pgvector` 时生效。
 
 ---
 

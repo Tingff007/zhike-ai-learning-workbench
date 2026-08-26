@@ -231,6 +231,7 @@ class ModelGateway:
         max_tokens: int = 1200,
         allow_fallback: bool = True,
         json_mode: bool = False,
+        tools: Sequence[dict[str, Any]] | None = None,
     ) -> ChatGenerationResult:
         """执行一次非流式聊天模型调用，并按配置处理降级和日志记录。"""
         return await self._chat_invocation_service.complete_chat(
@@ -243,6 +244,7 @@ class ModelGateway:
             max_tokens=max_tokens,
             allow_fallback=allow_fallback,
             json_mode=json_mode,
+            tools=tools,
         )
 
     async def stream_chat(
