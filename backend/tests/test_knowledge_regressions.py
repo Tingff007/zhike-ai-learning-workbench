@@ -142,3 +142,36 @@ def test_local_search_returns_citation_from_vector_candidate(monkeypatch) -> Non
     assert citation.page_no == 3
     assert citation.provenance_source == "local_pgvector"
     assert citation.similarity == round(settings.LOCAL_KNOWLEDGE_VECTOR_WEIGHT * 0.8, 4)
+
+
+def test_build_bm25_index_empty_course_returns_empty_index(monkeypatch) -> None:
+    """课程没有任何就绪切片时必须返回空 BM25 索引，不能对空语料执行 BM25Okapi 除零崩溃。"""
+    db = MagicMock()
+    db.execute.return_value.all.return_value = []
+
+    index = local_knowledge._build_bm25_index(db, uuid.uuid4())
+
+    assert index.bm25 is None
+    assert index.chunk_ids == []
+    assert index.chunk_data == {}
+    assert index.doc_titles == {}
+
+
+def test_local_search_empty_course_returns_no_citations(monkeypatch) -> None:
+    """无切片课程检索不应 500，应返回空引用（调用方按未命中拒答）。"""
+    db = MagicMock()
+    course = SimpleNamespace(id=uuid.uuid4(), slug="deep_learning_001", title="深度学习")
+    monkeypatch.setattr(LocalKnowledgeService, "_course", lambda _self, _course_id: course)
+    monkeypatch.setattr(
+        local_knowledge.local_embedding_service,
+        "encode",
+        lambda _texts: [[0.1, 0.2]],
+    )
+    # 向量检索无结果
+    db.execute.return_value.all.return_value = []
+    # 清空缓存确保走 _build_bm25_index 空语料分支
+    local_knowledge._bm25_cache.pop(str(course.id), None)
+
+    results = LocalKnowledgeService(db).search("deep_learning_001", "卷积神经网络", limit=3)
+
+    assert results == []

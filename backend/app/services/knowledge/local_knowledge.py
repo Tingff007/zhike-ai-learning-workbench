@@ -263,7 +263,11 @@ def _fit_column_text(value: str | None, max_length: int) -> str | None:
 
 
 def _build_bm25_index(db: Session, course_id) -> _Bm25Index:
-    """从数据库加载课程的活跃切片并构建 BM25 索引（只保留纯数据，不持有 ORM 对象）。"""
+    """从数据库加载课程的活跃切片并构建 BM25 索引（只保留纯数据，不持有 ORM 对象）。
+
+    课程没有任何就绪切片时返回空索引，避免 rank_bm25 对空语料做除零运算崩溃；
+    调用方会把空索引视为「无可靠依据」走拒答分支。
+    """
     rows = db.execute(
         select(DocumentChunk, Document)
         .join(Document, Document.id == DocumentChunk.document_id)
@@ -292,6 +296,9 @@ def _build_bm25_index(db: Session, course_id) -> _Bm25Index:
         }
         doc_titles[did] = doc.title
         corpus.append(_tokenize(chunk.content))
+    if not corpus:
+        # rank_bm25 要求语料非空；空课程直接返回空索引，检索时按未命中处理
+        return _Bm25Index(bm25=None, chunk_ids=chunk_ids, chunk_data=chunk_data, doc_titles=doc_titles)
     return _Bm25Index(bm25=BM25Okapi(corpus), chunk_ids=chunk_ids, chunk_data=chunk_data, doc_titles=doc_titles)
 
 
@@ -511,16 +518,18 @@ class LocalKnowledgeService:
         if course_id_str not in _bm25_cache:
             _bm25_cache[course_id_str] = _build_bm25_index(self.db, course.id)
         bm25_index = _bm25_cache[course_id_str]
-        query_tokens = _tokenize(query)
-        bm25_scores = bm25_index.bm25.get_scores(query_tokens)
-        # 生成 (chunk_id, score) 列表，过滤零分结果
-        scored_pairs = [
-            (bm25_index.chunk_ids[i], bm25_scores[i])
-            for i in range(len(bm25_scores))
-            if bm25_scores[i] > 0
-        ]
-        scored_pairs.sort(key=lambda x: x[1], reverse=True)
-        bm25_top = scored_pairs[:vector_limit]
+        bm25_top: list[tuple[str, float]] = []
+        if bm25_index.bm25 is not None:
+            query_tokens = _tokenize(query)
+            bm25_scores = bm25_index.bm25.get_scores(query_tokens)
+            # 生成 (chunk_id, score) 列表，过滤零分结果
+            scored_pairs = [
+                (bm25_index.chunk_ids[i], bm25_scores[i])
+                for i in range(len(bm25_scores))
+                if bm25_scores[i] > 0
+            ]
+            scored_pairs.sort(key=lambda x: x[1], reverse=True)
+            bm25_top = scored_pairs[:vector_limit]
         # BM25 分数归一化
         bm25_max = max(s for _, s in bm25_top) if bm25_top else 1.0
 
