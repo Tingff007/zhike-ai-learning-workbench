@@ -2,6 +2,8 @@
 .env
 .env.*
 !.env.example
+# frontend/.env.production 只含构建路径（无密钥），纳入版本控制便于 git 同步部署
+!frontend/.env.production
 
 # Python
 __pycache__/

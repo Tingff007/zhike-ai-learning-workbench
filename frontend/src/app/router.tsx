@@ -60,6 +60,9 @@ function withSuspense(node: ReactNode): JSX.Element {
   return <Suspense fallback={<RouteFallback />}>{node}</Suspense>;
 }
 
+// 子路径 basename：与 Vite base（import.meta.env.BASE_URL）保持一致，部署在 /zhike/ 时自动带上前缀
+const routerBaseName = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+
 export const router = createBrowserRouter([
   { path: "/login", element: withSuspense(<AuthPage mode="login" />) },
   { path: "/register", element: withSuspense(<AuthPage mode="register" />) },
@@ -131,4 +134,4 @@ export const router = createBrowserRouter([
       },
     ],
   },
-]);
+], { basename: routerBaseName });
