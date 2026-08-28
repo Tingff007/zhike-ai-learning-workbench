@@ -115,6 +115,48 @@ def chat(req: ChatCompletionRequest):
     except Exception as e:
         raise HTTPException(500, str(e))
 
+
+@app.post("/v1/base/chat/completions")
+def base_chat(req: ChatCompletionRequest):
+    """基座模型对比评测端点：临时禁用 LoRA adapter，用基座模型生成回答。
+
+    用于评估报告中的「基座 vs 微调」对比（见 docs/15-llm-finetune-evaluation-report.md）。
+    """
+    if model is None or tokenizer is None:
+        raise HTTPException(503, "模型未加载完成")
+    if req.stream:
+        raise HTTPException(400, "暂不支持流式输出")
+
+    try:
+        # 临时禁用 LoRA adapter，使用基座模型；无论成功失败都在 finally 中恢复
+        model.disable_adapter_layers()
+        try:
+            msgs = [{"role": m.role, "content": m.content} for m in req.messages]
+            text = tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+            inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048).to("cuda")
+
+            with torch.no_grad():
+                outputs = model.generate(
+                    **inputs, max_new_tokens=req.max_tokens,
+                    temperature=req.temperature, top_p=req.top_p, do_sample=True,
+                    pad_token_id=tokenizer.eos_token_id, eos_token_id=tokenizer.eos_token_id,
+                )
+
+            input_len = inputs["input_ids"].shape[1]
+            response_text = tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True)
+        finally:
+            model.enable_adapter_layers()  # 重新启用 LoRA，避免影响后续 /v1/chat/completions 调用
+
+        return {
+            "id": f"basecmpl-{int(time.time())}", "object": "chat.completion",
+            "created": int(time.time()), "model": "qwen2.5-7b-base",
+            "choices": [{"index": 0, "message": {"role": "assistant", "content": response_text}, "finish_reason": "stop"}],
+            "usage": {"prompt_tokens": input_len, "completion_tokens": len(outputs[0]) - input_len, "total_tokens": len(outputs[0])},
+        }
+    except Exception as e:
+        raise HTTPException(500, str(e))
+
+
 if __name__ == "__main__":
     print(f"启动推理服务，端口 {PORT}...", flush=True)
     uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
