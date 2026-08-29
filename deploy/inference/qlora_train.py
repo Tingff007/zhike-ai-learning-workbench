@@ -63,7 +63,7 @@ TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj"
 BATCH_SIZE = 1          # 8GB 显存，必须 batch_size=1
 GRAD_ACCUM_STEPS = 8    # 等效 batch_size = 8
 LEARNING_RATE = 2e-4
-NUM_EPOCHS = 3          # 3 个 epoch
+NUM_EPOCHS = 1          # 1 个 epoch（与实测训练记录一致：838 步 / 13 小时 21 分钟）
 MAX_SEQ_LEN = 1024      # 最大序列长度
 WARMUP_RATIO = 0.03
 LOGGING_STEPS = 10
