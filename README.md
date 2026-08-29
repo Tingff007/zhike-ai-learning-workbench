@@ -37,6 +37,7 @@
 | [docs/15-computer-ai-curriculum.md](./docs/15-computer-ai-curriculum.md) | 计算机与人工智能课程体系规划、GitHub 学习资料目录与智课承载映射。 |
 | [docs/16-knowledge-base-completion-plan.md](./docs/16-knowledge-base-completion-plan.md) | 本地知识库补全实施记录、语料导入、知识点映射与验证结果。 |
 | [docs/17-github-upload-and-reproduction.md](./docs/17-github-upload-and-reproduction.md) | GitHub 上传范围、不上传清单、其他开发者复刻与验证指南。 |
+| [docs/19-tech-support-introduction.md](./docs/19-tech-support-introduction.md) | 技术支撑介绍：总体架构、技术栈选型、核心 AI 技术、安全可信、部署运维与实测性能数据。 |
 
 ---
 
