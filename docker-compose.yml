@@ -17,9 +17,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-zhike_workshop}
       POSTGRES_USER: ${POSTGRES_USER:-zhike}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zhike_password}
-    # 生产不映射宿主端口：仅容器内网互访，避免与目标服务器已有 PostgreSQL 冲突
-    # ports:
-    #   - "5432:5432"
+    # 本地开发映射宿主端口（本地 venv 直跑后端需要）；生产可注释避免与已有 PostgreSQL 冲突
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
@@ -32,9 +32,9 @@ services:
   valkey:
     image: valkey/valkey:7.2
     container_name: zhike-valkey
-    # 生产不映射宿主端口：仅容器内网互访，避免与已有 Redis/Valkey 冲突
-    # ports:
-    #   - "6379:6379"
+    # 本地开发映射宿主端口（本地 venv 直跑后端需要）；生产可注释避免与已有 Redis/Valkey 冲突
+    ports:
+      - "6379:6379"
     volumes:
       - valkey_data:/data
 
