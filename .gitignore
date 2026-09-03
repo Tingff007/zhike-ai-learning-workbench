@@ -1,0 +1,72 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+# frontend/.env.production 只含构建路径（无密钥），纳入版本控制便于 git 同步部署
+!frontend/.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.pytest-runtime-tmp/
+.pytest-runtime-tmp*/
+.pytest-tmp/
+backend/.venv/
+backend/venv/
+backend/.pytest-deps/
+backend/.pytest-tmp/
+backend/.pytest-runtime-cache/
+backend/.pytest-runtime-tmp/
+backend/.pytest-runtime-tmp*/
+backend/.pytest-runtime-cache*/
+backend/pytest-cache-files-*/
+backend/backend/.pytest-runtime-cache*/
+backend/backend/.pytest-runtime-tmp*/
+backend/backend/pytest-cache-files-*/
+backend/test-storage-*/
+backend/.test-storage-*/
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-verify/
+frontend/.playwright-cli/
+frontend/chrome-profile-*/
+test-results/
+frontend/test-results/
+playwright-report/
+frontend/playwright-report/
+
+# Runtime output and storage
+*.log
+backend/*.log
+.playwright-cli/
+output/
+storage/*
+!storage/knowledge-sources/
+storage/knowledge-sources/*
+!storage/knowledge-sources/manifest.json
+!storage/knowledge-sources/ai-ml/
+!storage/knowledge-sources/algorithms/
+!storage/knowledge-sources/cs-foundations/
+!storage/knowledge-sources/data-system/
+!storage/knowledge-sources/llm-agents/
+!storage/knowledge-sources/supplement/
+!storage/knowledge-sources/web-engineering/
+backend/storage/*
+!backend/storage/models/
+backend/storage/models/*
+!backend/storage/models/models--BAAI--bge-small-zh-v1.5/
+backend/storage/models/models--BAAI--bge-small-zh-v1.5/.no_exist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,380 @@
+schema_version: "2.0"
+version: "builtin-2026-06-07"
+description: "知课 IntentRouter 2.0 默认注册表；运行时配置可复制到 storage/intent-router/intent_registry.yaml。"
+global:
+  execution_threshold: 0.6
+  clarification_threshold: 0.44
+  margin_threshold: 0.06
+  high_risk_threshold: 0.82
+  semantic_provider: "semantic-router"
+  embedding_provider: "model_gateway"
+  llm_judge_enabled: true
+  context_follow_up_phrases:
+    - "那下一步呢"
+    - "下一步呢"
+    - "还差什么"
+    - "还剩什么"
+    - "该复习哪一节"
+    - "复习什么"
+    - "补哪里"
+  context_block_phrases:
+    - "我要学"
+    - "我想学"
+    - "开始学习"
+    - "今天学什么"
+    - "今天我要学什么"
+  clarification:
+    prompt: "你是想开始今天的学习、查看学习进度，还是让我帮你制定学习计划？"
+    high_risk_prompt: "这个操作可能会创建学习资源或读取个人学情。请确认你想执行的动作。"
+    code: "intent_clarification_required"
+intents:
+  - name: "resource_generation"
+    display_name: "资源生成"
+    description: "创建练习题、讲义、测验、思维导图、错题补救卡等学习资源。"
+    enabled: true
+    risk_level: "high"
+    response_route: "resource_generation"
+    allowed_actions:
+      - "create_resource_task"
+    applicable_pages:
+      - "dashboard"
+      - "resource_workshop"
+      - "learning_path"
+    priority: 20
+    execution_threshold: 0.72
+    clarification_threshold: 0.55
+    margin_threshold: 0.08
+    rules:
+      contains_any:
+        - "出题"
+        - "出五道练习题"
+        - "生成复习题"
+        - "生成一套复习题"
+        - "生成练习题"
+        - "生成测验"
+        - "生成讲义"
+        - "生成错题"
+        - "生成思维导图"
+        - "做一套题"
+        - "做一组课后任务"
+      contains_all:
+        - ["薄弱点", "出"]
+        - ["薄弱", "练习题"]
+        - ["薄弱", "复习题"]
+        - ["学习进度", "生成"]
+        - ["学习进度", "出"]
+        - ["学习进度", "做"]
+        - ["当前章节", "生成"]
+        - ["当前章节", "出"]
+        - ["当前章节", "做"]
+        - ["这门课", "生成"]
+        - ["这门课", "出"]
+        - ["这门课", "做"]
+        - ["根据", "出题"]
+    utterances:
+      - "根据我的薄弱点出题"
+      - "根据我的薄弱点出五道练习题"
+      - "帮我生成一套复习题"
+      - "结合学习进度生成测验"
+      - "用当前章节做一组课后任务"
+      - "生成本章讲义"
+      - "生成错题巩固材料"
+      - "做一份知识点总结"
+    negative_utterances:
+      - "我有哪些薄弱点"
+      - "我学到哪了"
+      - "学习进度怎么样"
+      - "解释一下梯度下降"
+  - name: "course_rag_qa"
+    display_name: "课程资料问答"
+    description: "显式基于课件、讲义、教材或课程资料回答。"
+    enabled: true
+    risk_level: "medium"
+    response_route: "course_rag_qa"
+    allowed_actions:
+      - "query_course_rag"
+    applicable_pages:
+      - "dashboard"
+      - "ai_room"
+      - "knowledge_base"
+    priority: 30
+    execution_threshold: 0.66
+    clarification_threshold: 0.48
+    margin_threshold: 0.07
+    rules:
+      contains_any:
+        - "课件里"
+        - "课程资料里"
+        - "课程资料中"
+        - "文档里"
+        - "讲义中"
+        - "教材里"
+        - "这份资料里"
+      contains_all:
+        - ["课件", "定义"]
+        - ["课件", "解释"]
+        - ["课程资料", "定义"]
+        - ["课程资料", "是什么"]
+        - ["文档", "怎么说"]
+        - ["讲义", "原理"]
+    utterances:
+      - "课件里怎么定义梯度下降"
+      - "课程资料中怎么解释反向传播"
+      - "文档里提到的损失函数是什么"
+      - "讲义中 CNN 的结构是什么"
+      - "教材里对激活函数怎么讲"
+      - "根据课件说明注意力机制"
+    negative_utterances:
+      - "解释一下梯度下降"
+      - "什么是反向传播"
+      - "给我生成一套课件"
+      - "我要学这门课"
+  - name: "start_learning_session"
+    display_name: "开始学习"
+    description: "用户表达要立即进入今天或当前课程学习。"
+    enabled: true
+    risk_level: "low"
+    response_route: "learning_plan"
+    allowed_actions:
+      - "suggest_learning_entry"
+    applicable_pages:
+      - "dashboard"
+      - "learning_path"
+      - "ai_room"
+    priority: 40
+    execution_threshold: 0.62
+    clarification_threshold: 0.45
+    margin_threshold: 0.06
+    rules:
+      exact_any:
+        - "我要学"
+        - "我想学"
+        - "开始学习"
+        - "开始上课"
+      contains_any:
+        - "今天我要学什么"
+        - "今天学什么"
+        - "现在开始学"
+        - "现在要学"
+        - "现在想学"
+        - "今天想学"
+        - "继续学习"
+        - "进入学习"
+      negative_contains_any:
+        - "学到哪"
+        - "学习进度"
+    utterances:
+      - "我要学"
+      - "我想学"
+      - "开始学习"
+      - "今天我要学什么"
+      - "今天学什么"
+      - "现在开始学这门课"
+      - "带我进入今天的学习"
+    negative_utterances:
+      - "我学到哪了"
+      - "学习进度怎么样"
+      - "根据我的薄弱点出题"
+  - name: "learning_plan_request"
+    display_name: "学习计划"
+    description: "用户请求安排学习时间、制定计划或给出下一步学习建议。"
+    enabled: true
+    risk_level: "low"
+    response_route: "learning_plan"
+    allowed_actions:
+      - "generate_learning_plan"
+    applicable_pages:
+      - "dashboard"
+      - "learning_path"
+      - "calendar"
+    priority: 50
+    execution_threshold: 0.62
+    clarification_threshold: 0.45
+    margin_threshold: 0.06
+    rules:
+      contains_any:
+        - "学习计划"
+        - "安排学习"
+        - "学习安排"
+        - "帮我规划"
+        - "制定计划"
+        - "规划一下"
+      contains_all:
+        - ["安排", "分钟", "学习"]
+        - ["今天", "计划"]
+        - ["下一步", "安排"]
+    utterances:
+      - "帮我安排 30 分钟学习"
+      - "给我制定今天的学习计划"
+      - "我晚上有一小时，怎么学"
+      - "下一步学习计划是什么"
+      - "帮我规划本周学习"
+      - "今天的学习安排怎么做"
+    negative_utterances:
+      - "我目前学到哪了"
+      - "课件里怎么定义学习率"
+      - "生成学习计划文档"
+  - name: "learning_progress_query"
+    display_name: "学习进度查询"
+    description: "读取当前用户真实学习路径、掌握度、学习事件和薄弱点。"
+    enabled: true
+    risk_level: "medium"
+    response_route: "learning_progress"
+    allowed_actions:
+      - "read_learning_progress"
+    applicable_pages:
+      - "dashboard"
+      - "learning_path"
+      - "ai_room"
+    priority: 60
+    execution_threshold: 0.7
+    clarification_threshold: 0.5
+    margin_threshold: 0.08
+    rules:
+      contains_any:
+        - "学到哪"
+        - "学到哪里"
+        - "学到了哪"
+        - "学到了哪里"
+        - "学习进度"
+        - "学习进展"
+        - "学习情况"
+        - "当前进度"
+        - "课程完成度"
+        - "掌握情况"
+        - "掌握度怎么样"
+        - "完成度"
+        - "学了多少"
+        - "还剩多少"
+        - "哪里没学"
+        - "哪些没学"
+        - "哪些内容没完成"
+        - "还差哪些没学"
+        - "薄弱点有哪些"
+        - "需要复习哪些内容"
+        - "复习哪些内容"
+        - "下一步该学什么"
+        - "接下来应该学哪一节"
+      negative_contains_any:
+        - "我要学"
+        - "我想学"
+        - "开始学习"
+        - "今天我要学什么"
+        - "出题"
+        - "生成"
+    utterances:
+      - "我学到哪了"
+      - "我目前学到哪了"
+      - "学习进度怎么样"
+      - "我的学习进度怎么样"
+      - "我有哪些内容还没有完成"
+      - "我还有哪些薄弱点"
+      - "我对这门课掌握得怎么样"
+      - "现在应该继续学哪一节"
+    negative_utterances:
+      - "我要学"
+      - "我想学"
+      - "开始学习"
+      - "今天我要学什么"
+      - "根据我的薄弱点出题"
+  - name: "default_chat"
+    display_name: "普通对话"
+    description: "不需要读取学情、课程资料或创建任务的普通学习问答。"
+    enabled: true
+    risk_level: "low"
+    response_route: "default_chat"
+    allowed_actions:
+      - "chat"
+    applicable_pages:
+      - "dashboard"
+      - "ai_room"
+    priority: 900
+    execution_threshold: 0.58
+    clarification_threshold: 0.4
+    margin_threshold: 0.05
+    rules:
+      contains_any:
+        - "解释一下"
+        - "什么是"
+        - "怎么理解"
+        - "举例说明"
+        - "为什么"
+    utterances:
+      - "解释一下梯度下降"
+      - "什么是反向传播"
+      - "神经网络为什么需要激活函数"
+      - "卷积和池化有什么区别"
+      - "举例说明过拟合"
+      - "你好"
+      - "谢谢你的帮助"
+    negative_utterances:
+      - "课件里怎么定义梯度下降"
+      - "根据我的薄弱点出题"
+      - "我学到哪了"
+  - name: "general_chat"
+    display_name: "通用对话"
+    description: "无课程上下文的通用学习对话，响应时归并到 default_chat。"
+    enabled: true
+    risk_level: "low"
+    response_route: "default_chat"
+    allowed_actions:
+      - "chat"
+    applicable_pages:
+      - "dashboard"
+      - "ai_room"
+    priority: 910
+    utterances:
+      - "你好"
+      - "谢谢"
+      - "给我一些学习建议"
+      - "怎么提高学习效率"
+    negative_utterances:
+      - "我学到哪了"
+      - "课件里怎么定义梯度下降"
+evaluation_cases:
+  - text: "我要学"
+    expected_intent: "start_learning_session"
+  - text: "我想学"
+    expected_intent: "start_learning_session"
+  - text: "开始学习"
+    expected_intent: "start_learning_session"
+  - text: "今天我要学什么"
+    expected_intent: "start_learning_session"
+  - text: "我学到哪了"
+    expected_intent: "learning_progress_query"
+  - text: "学习进度怎么样"
+    expected_intent: "learning_progress_query"
+  - text: "根据我的薄弱点出题"
+    expected_intent: "resource_generation"
+  - text: "课件里怎么定义 X"
+    expected_intent: "course_rag_qa"
+  - text: "解释一下 X"
+    expected_intent: "default_chat"
+    course_id: null
+  - text: "那下一步呢"
+    expected_intent: "learning_progress_query"
+    last_intent_route: "learning_progress"
+  - text: "我要学"
+    expected_intent: "start_learning_session"
+    last_intent_route: "learning_progress"
+evaluation_templates:
+  - expected_intent: "start_learning_session"
+    prefixes: ["", "我", "现在", "今天"]
+    questions: ["要学", "想学", "开始学习", "今天学什么", "今天我要学什么", "继续学习"]
+  - expected_intent: "learning_plan_request"
+    prefixes: ["帮我", "请", "今天", "本周"]
+    questions: ["制定学习计划", "安排学习", "规划一下学习", "安排 30 分钟学习", "做学习安排", "规划本周学习"]
+  - expected_intent: "learning_progress_query"
+    prefixes: ["我", "我现在", "我目前", "帮我看看", "这门课里", "当前账号", "老师", "系统", "能不能看下", "请判断"]
+    questions: ["学到哪了", "学到了哪里", "学习进度怎么样", "当前学习情况如何", "课程完成度是多少", "掌握情况怎么样", "还剩多少没学", "哪些内容没完成", "薄弱点有哪些", "下一步该学什么", "接下来应该学哪一节", "需要复习哪些内容"]
+  - expected_intent: "course_rag_qa"
+    prefixes: ["课件里", "课程资料中", "文档里", "讲义中", "教材里", "这份资料里"]
+    topics: ["梯度下降", "反向传播", "卷积神经网络", "激活函数", "损失函数", "过拟合", "学习率", "注意力机制"]
+    templates: ["怎么定义{topic}", "{topic}的原理是什么", "如何解释{topic}", "{topic}和其他方法有什么区别", "有没有{topic}的例子"]
+  - expected_intent: "resource_generation"
+    prefixes: ["帮我", "请", "根据我的薄弱点", "按照这门课", "用当前章节", "结合学习进度"]
+    questions: ["生成一套复习题", "出五道练习题", "生成本章讲义", "生成测验", "做一份知识点总结", "生成错题巩固材料", "做一组课后任务"]
+  - expected_intent: "default_chat"
+    prefixes: [""]
+    topics: ["梯度下降", "反向传播", "卷积神经网络", "激活函数", "损失函数", "过拟合", "学习率", "注意力机制"]
+    templates: ["解释一下{topic}", "什么是{topic}", "{topic}为什么重要", "{topic}怎么理解", "{topic}和传统方法有什么区别", "举例说明{topic}", "{topic}的基本流程是什么", "如何入门{topic}"]
