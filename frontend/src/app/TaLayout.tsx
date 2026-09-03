@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, FileText, CheckSquare, BarChart3, Users,
-  BookOpen, Bell, LogOut, Bot, BrainCircuit,
+  BookOpen, Bell, LogOut, Bot,
 } from "lucide-react";
 import { useSessionStore } from "../stores/session.store";
 
@@ -11,7 +11,6 @@ const navItems = [
   { to: "/ta/lesson-prep", label: "智能备课", icon: FileText },
   { to: "/ta/grading", label: "作业批改", icon: CheckSquare },
   { to: "/ta/diagnosis", label: "学情诊断", icon: BarChart3 },
-  { to: "/ta/continual", label: "持续学习", icon: BrainCircuit },
   { to: "/ta/class-management", label: "班级管理", icon: Users },
   { to: "/ta/resource-review", label: "资源审核", icon: BookOpen },
   { to: "/ta/announcements", label: "公告通知", icon: Bell },

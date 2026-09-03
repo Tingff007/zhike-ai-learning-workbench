@@ -779,9 +779,8 @@
   display: none;
 }
 
-.admin-workbench.interface-settings-page .interface-settings-preview .auth-page__video-vignette {
-  background: rgb(255 255 255 / 0.16);
-  background-image: none;
+.admin-workbench.interface-settings-page .interface-settings-preview::before {
+  opacity: 0.82;
 }
 
 .admin-workbench.resource-review-page {
