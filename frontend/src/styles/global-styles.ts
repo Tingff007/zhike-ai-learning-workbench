@@ -31,6 +31,7 @@ import './pages/admin/knowledge-base.css';
 import './pages/admin/knowledge-chunk-workbench.css';
 import './4-components/resource-generation.css';
 import './4-components/workspace-theme.css';
+import './4-components/workspace-palette.css';
 import './4-components/overlay-transparency.css';
 import './pages/admin/admin-workbench.css';
 import './4-components/onboarding.css';
