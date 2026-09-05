@@ -29,6 +29,7 @@ import './pages/curriculum/curriculum.css';
 import './pages/admin/interface-settings.css';
 import './pages/admin/knowledge-base.css';
 import './pages/admin/knowledge-chunk-workbench.css';
+import './pages/ta/ta-workbench.css';
 import './4-components/resource-generation.css';
 import './4-components/workspace-theme.css';
 import './4-components/workspace-palette.css';
